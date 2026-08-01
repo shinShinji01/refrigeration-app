@@ -1,0 +1,46 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  cursor: pointer;
+
+  @include touch-target;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-bg;
+
+  @include tap-feedback;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &[data-state='checked'] {
+    background: $color-accent-cyan;
+    border-color: $color-accent-cyan;
+  }
+}
+
+.indicator {
+  display: flex;
+}
+
+.icon {
+  width: 13px;
+  height: 13px;
+  color: $color-white;
+}
+
+.label {
+  font-size: 0.875rem;
+  color: $color-text;
+}

@@ -1,0 +1,47 @@
+// Цветовое кодирование типа — приглушённая подложка + плотная полоса слева,
+// не заливка целиком (CLAUDE.md → "Дизайн-направление").
+.root {
+  position: relative;
+  display: flex;
+  gap: $space-3;
+  padding: $space-3;
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--accent) 8%, $color-bg);
+  border-left: 4px solid var(--accent);
+
+  @include tap-feedback;
+}
+
+.archived {
+  opacity: 0.55;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.body {
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: $color-text;
+}
+
+// Номера чертежей — моноширинным, цифры табличные (CLAUDE.md).
+.subtitle {
+  margin: $space-1 0 0;
+  font-family: $font-family-mono;
+  font-size: 0.8125rem;
+  color: $color-text-muted;
+
+  @include tabular-nums;
+}

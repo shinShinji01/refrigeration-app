@@ -1,7 +1,7 @@
 export const StockPage = () => {
   return (
-    <main>
+    <div>
       <h1>Подсчёт наличия</h1>
-    </main>
+    </div>
   )
 }
