@@ -1,22 +1,24 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
 node_modules
 dist
 dist-ssr
 *.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
 .DS_Store
+.env
+.env.*
+!.env.example
+
+# PocketBase — pb_data создаётся рядом с бинарником (.pocketbase/), не в cwd запуска.
+# pb_migrations — не игнорируем, это код схемы, коммитится.
+.pocketbase/pocketbase
+.pocketbase/pocketbase.exe
+.pocketbase/pb_data/
+
+# Claude Code — личные настройки
+.claude/settings.local.json
+.playwright-mcp/
+
+# IDE
+.idea
 *.suo
 *.ntvs*
 *.njsproj
