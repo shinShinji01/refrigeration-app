@@ -1,0 +1,15 @@
+.root {
+  min-height: 100vh;
+}
+
+// Полоса/рельса сайдбара занимает фиксированное место всегда; развёрнутое
+// состояние — оверлей поверх контента (position: fixed в Sidebar), контент не
+// сдвигается, чтобы не тянуть состояние сайдбара наверх в layout.
+.content {
+  padding-top: 56px;
+
+  @include respond-to(tablet) {
+    padding-top: 0;
+    padding-left: 64px;
+  }
+}

@@ -1,0 +1,32 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  @include touch-target;
+
+  border-radius: $radius-sm;
+  color: $color-text-muted;
+  transition:
+    background-color $duration-fast $easing-standard,
+    color $duration-fast $easing-standard;
+
+  &:hover {
+    background: $color-accent-cyan-muted;
+    color: $color-text;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &[aria-pressed='true'] {
+    background: $color-accent-cyan-muted;
+    color: $color-accent-cyan;
+  }
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}

@@ -24,6 +24,7 @@ export type PocketbaseBaseQueryArgs =
       params?: Omit<PocketbaseListParams, 'page' | 'perPage'>
     }
   | { collection: string; method: 'getOne'; id: string; expand?: string }
+  | { collection: string; method: 'getFirstListItem'; filter: string; expand?: string }
   | { collection: string; method: 'create'; body: Record<string, unknown> }
   | {
       collection: string
@@ -64,6 +65,10 @@ export const pocketbaseBaseQuery: BaseQueryFn<
       }
       case 'getOne': {
         const data = await collection.getOne(args.id, { expand: args.expand })
+        return { data }
+      }
+      case 'getFirstListItem': {
+        const data = await collection.getFirstListItem(args.filter, { expand: args.expand })
         return { data }
       }
       case 'create': {

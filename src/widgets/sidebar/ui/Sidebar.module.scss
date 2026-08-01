@@ -1,0 +1,148 @@
+// Одна разметка на оба форм-фактора. Мобильный — полоса сверху, разворачивается
+// в панель под собой. Десктоп — узкая полоса слева, разворачивается в ширину.
+// Разница только в этих стилях, JS не знает про breakpoint (см. useSidebar).
+
+.root {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: $z-sidebar;
+  display: flex;
+  flex-direction: column;
+  background: $color-surface;
+  border-bottom: 1px solid $color-border;
+
+  @include respond-to(tablet) {
+    inset: 0 auto 0 0;
+    width: 64px;
+    border-bottom: none;
+    border-right: 1px solid $color-border;
+    transition: width $duration-base $easing-standard;
+
+    &[data-expanded='true'] {
+      width: 240px;
+    }
+  }
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 $space-2;
+  flex-shrink: 0;
+
+  @include respond-to(tablet) {
+    height: auto;
+    padding: $space-3 $space-2;
+  }
+}
+
+.panel {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 $space-2 $space-3;
+
+  .root[data-expanded='true'] & {
+    display: flex;
+  }
+
+  @include respond-to(tablet) {
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+
+  @include touch-target;
+
+  padding: 0 $space-2;
+  border-radius: $radius-sm;
+  color: $color-text-muted;
+  white-space: nowrap;
+
+  @include tap-feedback;
+
+  &:hover {
+    background: $color-accent-cyan-muted;
+    color: $color-text;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.navItemActive {
+  color: $color-accent-cyan;
+  background: $color-accent-cyan-muted;
+}
+
+.navItemDisabled {
+  color: $color-text-disabled;
+
+  &:hover {
+    background: none;
+  }
+}
+
+.navIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.label {
+  display: none;
+
+  .root[data-expanded='true'] & {
+    display: inline;
+  }
+}
+
+.userBlock {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-2;
+  margin-top: $space-3;
+  border-top: 1px solid $color-border;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: $radius-lg;
+  background: $color-graphite-100;
+  color: $color-text-muted;
+  font-size: 0.875rem;
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userName {
+  color: $color-text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

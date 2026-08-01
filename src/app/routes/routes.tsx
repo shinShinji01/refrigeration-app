@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router'
-import { paths } from './paths'
+import { paths } from '@/shared/config'
 import { RootLayout } from './RootLayout'
 
 export const router = createBrowserRouter([
