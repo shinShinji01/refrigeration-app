@@ -1,29 +1,41 @@
-import type { RefrigerationUnit } from '@/entities/refrigeration-unit'
+import type { ComponentListItem } from '@/features/cascade-filter'
 import { UnitCard } from '@/entities/refrigeration-unit'
+import { AssemblyCard } from '@/entities/assembly'
+import { PartCard } from '@/entities/part'
 import { EmptyState } from '@/shared/ui'
 import styles from './ComponentList.module.scss'
 
 interface ComponentListProps {
-  units: RefrigerationUnit[]
+  items: ComponentListItem[]
   isLoading: boolean
+  // Ничего не выбрано и поиск пуст — по ТЗ список пуст без сообщения
+  // (docs/spec.md → "Список сборочных единиц").
+  isIdle: boolean
 }
 
-// Пока только карточки установок. Сборочные узлы и детали появятся в общем
-// списке вместе с каскадными дропдаунами (docs/structure.md).
-export const ComponentList = ({ units, isLoading }: ComponentListProps) => {
-  if (isLoading) {
+export const ComponentList = ({ items, isLoading, isIdle }: ComponentListProps) => {
+  if (isIdle || isLoading) {
     return null
   }
 
-  if (units.length === 0) {
+  if (items.length === 0) {
     return <EmptyState message="Ничего не найдено" />
   }
 
   return (
     <div className={styles.grid}>
-      {units.map((unit) => (
-        <UnitCard key={unit.id} unit={unit} />
-      ))}
+      {items.map((item) => {
+        switch (item.kind) {
+          case 'unit':
+            return <UnitCard key={`unit-${item.unit.id}`} unit={item.unit} />
+          case 'assembly':
+            return (
+              <AssemblyCard key={`assembly-${item.assembly.id}`} assembly={item.assembly} quantity={item.quantity} />
+            )
+          case 'part':
+            return <PartCard key={`part-${item.part.id}`} part={item.part} quantity={item.quantity} />
+        }
+      })}
     </div>
   )
 }

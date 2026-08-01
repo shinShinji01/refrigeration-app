@@ -11,3 +11,7 @@ export interface Part extends BaseRecord {
   commissionedAt: IsoDateString | null
   isArchived: boolean
 }
+
+// Деталь в составе конкретного узла (assembly_parts) или родительской детали
+// (part_parts) — с количеством на узел/родителя.
+export type PartWithQuantity = Part & { quantity: number }

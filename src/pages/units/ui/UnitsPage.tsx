@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useGetUnitsQuery } from '@/entities/refrigeration-unit'
+import { useFilteredComponents } from '@/features/cascade-filter'
 import { FilterBar } from '@/widgets/filter-bar'
 import { ComponentList } from '@/widgets/component-list'
 import { useDebounce } from '@/shared/lib/hooks'
@@ -10,7 +10,7 @@ export const UnitsPage = () => {
   const [includeArchived, setIncludeArchived] = useState(false)
   const debouncedSearch = useDebounce(search, 300)
 
-  const { data: units = [], isLoading } = useGetUnitsQuery({
+  const { items, isLoading, isIdle } = useFilteredComponents({
     search: debouncedSearch,
     includeArchived,
   })
@@ -24,7 +24,7 @@ export const UnitsPage = () => {
         includeArchived={includeArchived}
         onIncludeArchivedChange={setIncludeArchived}
       />
-      <ComponentList units={units} isLoading={isLoading} />
+      <ComponentList items={items} isLoading={isLoading} isIdle={isIdle} />
     </div>
   )
 }

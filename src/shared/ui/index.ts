@@ -1,4 +1,7 @@
 export { IconButton } from './IconButton'
 export { ComponentCard } from './ComponentCard'
 export { Checkbox } from './Checkbox'
+export { Combobox } from './Combobox'
 export { EmptyState } from './EmptyState'
+export { ChildrenSummaryList } from './ChildrenSummaryList'
+export type { ChildrenSummaryItem } from './ChildrenSummaryList'

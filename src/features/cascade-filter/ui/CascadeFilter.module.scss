@@ -1,0 +1,10 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  width: 100%;
+
+  @include respond-to(tablet) {
+    flex-direction: row;
+  }
+}

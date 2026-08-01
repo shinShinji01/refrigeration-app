@@ -10,3 +10,6 @@ export interface Assembly extends BaseRecord {
   introducedAtUnitNo: number | null
   isArchived: boolean
 }
+
+// Узел в составе конкретной установки (unit_assemblies) — с количеством на установку.
+export type AssemblyWithQuantity = Assembly & { quantity: number }

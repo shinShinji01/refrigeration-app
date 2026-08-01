@@ -1,9 +1,15 @@
 .root {
   display: flex;
+  flex-direction: column;
+  gap: $space-3;
+  padding: $space-3 0;
+}
+
+.row {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: $space-4;
-  padding: $space-3 0;
 }
 
 .search {

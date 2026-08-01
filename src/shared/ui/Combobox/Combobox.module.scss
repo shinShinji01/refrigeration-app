@@ -1,0 +1,86 @@
+.root {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+
+  @include touch-target;
+
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-bg;
+
+  &:focus-within {
+    @include focus-ring;
+  }
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 $space-3;
+  border: none;
+  background: transparent;
+  color: $color-text;
+  font-size: 0.9375rem;
+
+  &:disabled {
+    color: $color-text-disabled;
+  }
+
+  &::placeholder {
+    color: $color-text-disabled;
+  }
+}
+
+.clear,
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: $touch-target-min;
+  height: $touch-target-min;
+  flex-shrink: 0;
+  color: $color-text-muted;
+  font-size: 1rem;
+
+  &:disabled {
+    color: $color-text-disabled;
+  }
+}
+
+.menu {
+  position: absolute;
+  z-index: $z-sticky;
+  padding: $space-1;
+  max-height: 280px;
+  overflow-y: auto;
+
+  @include card-surface;
+
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  padding: $space-2 $space-3;
+  border-radius: $radius-sm;
+  font-size: 0.9375rem;
+  color: $color-text;
+  cursor: pointer;
+}
+
+.highlighted {
+  background: $color-accent-cyan-muted;
+  color: $color-accent-cyan;
+}
