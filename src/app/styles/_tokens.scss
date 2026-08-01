@@ -1,0 +1,65 @@
+// Единственный источник цветов/отступов/радиусов — хардкод хекса в компонентах
+// запрещён (см. CLAUDE.md). Палитра — холодная нейтральная (холодильное
+// производство): графит + белый лист + ледяной cyan для активного состояния.
+
+// --- Графитовая шкала ---------------------------------------------------
+$color-graphite-900: #1a1d21;
+$color-graphite-700: #333940;
+$color-graphite-500: #5b636b;
+$color-graphite-300: #9aa3ab;
+$color-graphite-100: #e4e7ea;
+$color-white: #fff;
+
+// --- Акценты --------------------------------------------------------------
+// Cyan — единственный акцент активного состояния/выделения.
+$color-accent-cyan: #00b8d9;
+$color-accent-cyan-muted: rgb(0 184 217 / 12%);
+
+// Янтарный — только архив и предупреждения.
+$color-amber: #b5750a;
+$color-amber-muted: rgb(181 117 10 / 12%);
+
+// Красный — только удаление.
+$color-red: #d13c2e;
+$color-red-muted: rgb(209 60 46 / 10%);
+
+// --- Семантические алиасы ---------------------------------------------
+$color-bg: $color-white;
+$color-surface: $color-white;
+$color-border: $color-graphite-100;
+$color-text: $color-graphite-900;
+$color-text-muted: $color-graphite-500;
+$color-text-disabled: $color-graphite-300;
+
+// --- Отступы (шкала 4px) ------------------------------------------------
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-5: 24px;
+$space-6: 32px;
+$space-8: 48px;
+
+// --- Радиусы --------------------------------------------------------------
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+
+// --- Тач-таргеты ------------------------------------------------------
+$touch-target-min: 44px;
+
+// --- Типографика ------------------------------------------------------
+$font-family-base: system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
+$font-family-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', consolas, monospace;
+
+// --- Анимация (короткая, осязаемая, без длинных переходов) -----------
+$duration-fast: 150ms;
+$duration-base: 200ms;
+$easing-standard: ease-out;
+
+// --- Слои (для модалок/sticky-панелей) ---------------------------------
+$z-sticky: 10;
+$z-sidebar: 20;
+$z-modal-backdrop: 30;
+$z-modal: 31;
+$z-toast: 40;

@@ -1,0 +1,57 @@
+// Файл сам себе явно подключает токены/точки перехода — @use внутри одного
+// модуля не "наследуется" от файла, который его подключил (см. docs/decisions.md
+// про глобальный SASS через additionalData в vite.config).
+@use 'tokens' as *;
+@use 'breakpoints' as *;
+
+@mixin respond-to($name) {
+  @if $name == tablet {
+    @media (min-width: $breakpoint-tablet) {
+      @content;
+    }
+  } @else if $name == desktop {
+    @media (min-width: $breakpoint-desktop) {
+      @content;
+    }
+  } @else {
+    @error 'respond-to: неизвестная точка перехода "#{$name}"';
+  }
+}
+
+@mixin card-surface {
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+}
+
+@mixin focus-ring {
+  outline: 2px solid $color-accent-cyan;
+  outline-offset: 2px;
+}
+
+@mixin tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@mixin touch-target {
+  min-width: $touch-target-min;
+  min-height: $touch-target-min;
+}
+
+// Короткая осязаемая подсветка/масштаб — фидбек на действие пользователя.
+// Никаких длинных анимаций и параллаксов (CLAUDE.md).
+@mixin tap-feedback {
+  transition:
+    transform $duration-fast $easing-standard,
+    background-color $duration-fast $easing-standard;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}

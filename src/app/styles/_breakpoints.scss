@@ -1,0 +1,5 @@
+// Mobile first — точки перехода только вверх (min-width). Используются только
+// через миксин respond-to(), напрямую в компонентах не подключаются.
+
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1200px;
