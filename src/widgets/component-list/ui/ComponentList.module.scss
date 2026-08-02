@@ -14,6 +14,26 @@
   }
 }
 
+// Архивные — отдельная секция, а не вперемешку с активными (CLAUDE.md →
+// янтарный только для архива).
+.archivedDivider {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  margin: $space-4 0 $space-3;
+  color: $color-amber;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.archivedDivider::before,
+.archivedDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: $color-amber-muted;
+}
+
 .split {
   display: flex;
   flex-direction: column;

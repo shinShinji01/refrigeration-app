@@ -8,6 +8,13 @@ const TYPE_ORDER: Record<ComponentListItem['kind'], number> = { unit: 0, assembl
 const getName = (item: ComponentListItem): string =>
   item.kind === 'unit' ? item.unit.name : item.kind === 'assembly' ? item.assembly.name : item.part.name
 
+const getIsArchived = (item: ComponentListItem): boolean =>
+  item.kind === 'unit'
+    ? item.unit.isArchived
+    : item.kind === 'assembly'
+      ? item.assembly.isArchived
+      : item.part.isArchived
+
 // PocketBase хранит незаполненную дату как "" (а не null) — || null нормализует оба случая.
 const getDate = (item: ComponentListItem): string | null => {
   const value =
@@ -21,10 +28,14 @@ const getDate = (item: ComponentListItem): string | null => {
 
 // Название — тай-брейк для "по типу" и "по дате", чтобы порядок был
 // детерминированным и предсказуемым для пользователя, а не "как повезло".
+// Архивные элементы всегда в конце, независимо от критерия сортировки.
 export const sortComponentItems = (items: ComponentListItem[], sortBy: SortBy): ComponentListItem[] => {
   const byName = (a: ComponentListItem, b: ComponentListItem) => getName(a).localeCompare(getName(b), 'ru')
 
   return [...items].sort((a, b) => {
+    const archivedDiff = Number(getIsArchived(a)) - Number(getIsArchived(b))
+    if (archivedDiff !== 0) return archivedDiff
+
     switch (sortBy) {
       case 'name':
         return byName(a, b)
@@ -42,4 +53,22 @@ export const sortComponentItems = (items: ComponentListItem[], sortBy: SortBy): 
       }
     }
   })
+}
+
+export interface SplitByArchivedResult {
+  active: ComponentListItem[]
+  archived: ComponentListItem[]
+}
+
+// Для визуального разделения (перенос на следующую секцию) — используется
+// вместе с уже отсортированным (sortComponentItems кладёт архивные в конец)
+// списком, но не полагается на это: делит по isArchived самостоятельно.
+export const splitByArchived = (items: ComponentListItem[]): SplitByArchivedResult => {
+  const active: ComponentListItem[] = []
+  const archived: ComponentListItem[] = []
+  for (const item of items) {
+    const bucket = getIsArchived(item) ? archived : active
+    bucket.push(item)
+  }
+  return { active, archived }
 }

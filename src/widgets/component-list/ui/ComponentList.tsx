@@ -1,7 +1,7 @@
 import type { ComponentListItem } from '@/features/cascade-filter'
 import { getComponentListItemKey } from '@/features/cascade-filter'
 import { useCardSelection } from '@/features/card-selection'
-import { useCardSort, sortComponentItems, SortButton } from '@/features/card-sort'
+import { useCardSort, sortComponentItems, splitByArchived, SortButton } from '@/features/card-sort'
 import { SelectionToolbar, useBulkActions } from '@/widgets/selection-toolbar'
 import { EmptyState } from '@/shared/ui'
 import { ComponentListCard } from './ComponentListCard'
@@ -17,6 +17,7 @@ const renderCard = (
   item: ComponentListItem,
   isSelected: (key: string) => boolean,
   toggleSelected: (key: string) => void,
+  compact?: boolean,
 ) => {
   const itemKey = getComponentListItemKey(item)
   return (
@@ -26,7 +27,32 @@ const renderCard = (
       itemKey={itemKey}
       selected={isSelected(itemKey)}
       onToggleSelected={toggleSelected}
+      compact={compact}
     />
+  )
+}
+
+// Архивные — отдельной секцией в конце, с переносом на новую строку, а не
+// вперемешку с активными (docs/spec.md → "Список карточек"). compact — карточки
+// в сетке всегда одной высоты с обрезкой лишнего (не относится к выбранной слева).
+const renderGrid = (
+  items: ComponentListItem[],
+  isSelected: (key: string) => boolean,
+  toggleSelected: (key: string) => void,
+) => {
+  const { active, archived } = splitByArchived(items)
+  return (
+    <>
+      <div className={styles.grid}>{active.map((item) => renderCard(item, isSelected, toggleSelected, true))}</div>
+      {archived.length > 0 ? (
+        <>
+          <div className={styles.archivedDivider}>Архив</div>
+          <div className={styles.grid}>
+            {archived.map((item) => renderCard(item, isSelected, toggleSelected, true))}
+          </div>
+        </>
+      ) : null}
+    </>
   )
 }
 
@@ -60,22 +86,30 @@ export const ComponentList = ({ parent, childItems, isLoading }: ComponentListPr
     return (
       <>
         {toolbar}
+        {/* Кнопка сортировки — над всей раскладкой, а не только над сеткой
+            детей: иначе левая (родитель) и правая колонки стартуют на разной
+            высоте. */}
+        <div className={styles.controls}>
+          <SortButton />
+        </div>
         <div className={styles.split}>
           <div className={styles.parentCell}>{renderCard(parent, isSelected, toggleSelected)}</div>
-          <div className={styles.childrenCell}>
-            <div className={styles.controls}>
-              <SortButton />
-            </div>
-            <div className={styles.grid}>
-              {sortedChildren.map((item) => renderCard(item, isSelected, toggleSelected))}
-            </div>
-          </div>
+          <div className={styles.childrenCell}>{renderGrid(sortedChildren, isSelected, toggleSelected)}</div>
         </div>
       </>
     )
   }
 
-  const items = parent ? [parent] : sortComponentItems(childItems, sortBy)
+  if (parent) {
+    return (
+      <>
+        {toolbar}
+        <div className={styles.grid}>{renderCard(parent, isSelected, toggleSelected)}</div>
+      </>
+    )
+  }
+
+  const items = sortComponentItems(childItems, sortBy)
   if (items.length === 0) {
     return <EmptyState message="Ничего не найдено" />
   }
@@ -83,12 +117,10 @@ export const ComponentList = ({ parent, childItems, isLoading }: ComponentListPr
   return (
     <>
       {toolbar}
-      {parent ? null : (
-        <div className={styles.controls}>
-          <SortButton />
-        </div>
-      )}
-      <div className={styles.grid}>{items.map((item) => renderCard(item, isSelected, toggleSelected))}</div>
+      <div className={styles.controls}>
+        <SortButton />
+      </div>
+      {renderGrid(items, isSelected, toggleSelected)}
     </>
   )
 }

@@ -20,6 +20,9 @@ interface ComponentCardProps {
   selectLabel?: string
   // Кнопка редактирования по ховеру/фокусу (docs/spec.md → "Список карточек").
   onEdit?: () => void
+  // Фиксированная высота с обрезкой лишнего контента, разворачивается по
+  // ховеру/фокусу — для карточек-детей в сетке (не для выбранной слева).
+  compact?: boolean
 }
 
 // Общая карточка для всех трёх типов (установка/узел/деталь). Конкретика —
@@ -35,12 +38,18 @@ export const ComponentCard = ({
   onSelectedChange,
   selectLabel,
   onEdit,
+  compact,
 }: ComponentCardProps) => {
   const style = { '--accent': accentColor } satisfies CSSProperties
 
   return (
     <article
-      className={clsx(styles.root, isArchived && styles.archived, selected && styles.selected)}
+      className={clsx(
+        styles.root,
+        isArchived && styles.archived,
+        selected && styles.selected,
+        compact && styles.compact,
+      )}
       style={style}
     >
       {onSelectedChange || onEdit ? (

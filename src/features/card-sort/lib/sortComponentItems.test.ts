@@ -1,23 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import { sortComponentItems } from './sortComponentItems'
+import { sortComponentItems, splitByArchived } from './sortComponentItems'
 import type { ComponentListItem } from '@/features/cascade-filter'
 import type { RefrigerationUnit, UnitId } from '@/entities/refrigeration-unit'
 import type { Assembly, AssemblyId } from '@/entities/assembly'
 import type { Part, PartId } from '@/entities/part'
 
-const unit = (name: string, commissionedAt: string | null = null): ComponentListItem => ({
+interface ItemOptions {
+  commissionedAt?: string | null
+  isArchived?: boolean
+}
+
+const unit = (name: string, { commissionedAt = null, isArchived = false }: ItemOptions = {}): ComponentListItem => ({
   kind: 'unit',
-  unit: { id: name as UnitId, name, commissionedAt } as RefrigerationUnit,
+  unit: { id: name as UnitId, name, commissionedAt, isArchived } as RefrigerationUnit,
 })
 
-const assembly = (name: string, commissionedAt: string | null = null): ComponentListItem => ({
+const assembly = (
+  name: string,
+  { commissionedAt = null, isArchived = false }: ItemOptions = {},
+): ComponentListItem => ({
   kind: 'assembly',
-  assembly: { id: name as AssemblyId, name, commissionedAt } as Assembly,
+  assembly: { id: name as AssemblyId, name, commissionedAt, isArchived } as Assembly,
 })
 
-const part = (name: string, commissionedAt: string | null = null): ComponentListItem => ({
+const part = (name: string, { commissionedAt = null, isArchived = false }: ItemOptions = {}): ComponentListItem => ({
   kind: 'part',
-  part: { id: name as PartId, name, commissionedAt } as Part,
+  part: { id: name as PartId, name, commissionedAt, isArchived } as Part,
 })
 
 const names = (items: ComponentListItem[]) =>
@@ -37,9 +45,36 @@ describe('sortComponentItems', () => {
 
   it('сортирует по дате, элементы без даты — в конце, тай-брейк по названию', () => {
     const result = sortComponentItems(
-      [unit('Б', null), unit('А', '2024-03-01'), unit('В', '2024-01-01'), unit('Г', '')],
+      [
+        unit('Б'),
+        unit('А', { commissionedAt: '2024-03-01' }),
+        unit('В', { commissionedAt: '2024-01-01' }),
+        unit('Г', { commissionedAt: '' }),
+      ],
       'date',
     )
     expect(names(result)).toEqual(['В', 'А', 'Б', 'Г'])
+  })
+
+  it('архивные — всегда в конце, независимо от критерия', () => {
+    const result = sortComponentItems(
+      [unit('Я', { isArchived: true }), unit('А'), unit('Б', { isArchived: true }), unit('В')],
+      'name',
+    )
+    expect(names(result)).toEqual(['А', 'В', 'Б', 'Я'])
+  })
+})
+
+describe('splitByArchived', () => {
+  it('делит на активные и архивные, сохраняя порядок внутри групп', () => {
+    const items = [unit('А'), unit('Б', { isArchived: true }), unit('В'), unit('Г', { isArchived: true })]
+    const result = splitByArchived(items)
+    expect(names(result.active)).toEqual(['А', 'В'])
+    expect(names(result.archived)).toEqual(['Б', 'Г'])
+  })
+
+  it('пустой archived, если архивных нет', () => {
+    const result = splitByArchived([unit('А'), unit('Б')])
+    expect(result.archived).toEqual([])
   })
 })
