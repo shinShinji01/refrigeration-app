@@ -12,6 +12,20 @@
   gap: $space-4;
 }
 
+// Кнопка сортировки — справа от каскадных дропдаунов, под чекбоксом
+// "Показать архивные" из строки выше (оба прижаты к правому краю).
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: $space-3;
+}
+
+.cascadeSlot {
+  flex: 1;
+  min-width: 0;
+}
+
 .search {
   flex: 1;
   min-width: 200px;

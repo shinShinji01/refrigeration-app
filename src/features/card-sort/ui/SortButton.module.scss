@@ -2,11 +2,15 @@
   position: relative;
 }
 
+// min-width — под самую длинную подпись ("По названию"), иначе кнопка меняет
+// размер при смене критерия и вместе с ней двигаются дропдауны рядом (оба —
+// flex-элементы в одной строке в FilterBar).
 .trigger {
   display: inline-flex;
   align-items: center;
   gap: $space-2;
   height: $touch-target-min;
+  min-width: 148px;
   padding: 0 $space-3;
   border: 1px solid $color-border;
   border-radius: $radius-sm;

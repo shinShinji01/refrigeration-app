@@ -71,14 +71,21 @@
 // ховеру не меняет высоту ячейки сетки и не двигает следующие ряды, а рисуется
 // поверх них (z-index). Без этого слоя разворот раздвигал бы сетку.
 @include respond-to(tablet) {
+  $compact-height: 200px;
+
   .compactSlot {
     position: relative;
-    height: 200px;
+    height: $compact-height;
   }
 
+  // min-height — тот самый пол: у карточки с коротким составом height: auto
+  // на ховере посчитал бы высоту МЕНЬШЕ слота, карточка бы сжалась, курсор
+  // оказался бы вне её границ, :hover слетел бы, она вернулась бы к исходной
+  // высоте — и так по кругу (мигание). min-height не даёт схлопнуться ниже слота.
   .compactCard {
     position: absolute;
     inset: 0;
+    min-height: $compact-height;
     overflow: hidden;
     transition:
       height $duration-base $easing-standard,
