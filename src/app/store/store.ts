@@ -3,6 +3,7 @@ import { baseApi } from '@/shared/api'
 import { cascadeFilterReducer } from '@/features/cascade-filter'
 import { cardSelectionReducer } from '@/features/card-selection'
 import { cardSortReducer } from '@/features/card-sort'
+import { insulationFilterReducer } from '@/features/insulation-set-filter'
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     cascadeFilter: cascadeFilterReducer,
     cardSelection: cardSelectionReducer,
     cardSort: cardSortReducer,
+    insulationFilter: insulationFilterReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(baseApi.middleware),
 })

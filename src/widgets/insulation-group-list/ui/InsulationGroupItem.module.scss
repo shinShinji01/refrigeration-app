@@ -1,0 +1,96 @@
+.item {
+  @include card-surface;
+
+  overflow: hidden;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  width: 100%;
+  padding: $space-3;
+
+  @include touch-target;
+  @include tap-feedback;
+
+  color: $color-text;
+  text-align: left;
+
+  &:hover {
+    background: $color-accent-cyan-muted;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: $color-text-muted;
+  transition: transform $duration-fast $easing-standard;
+}
+
+.trigger[data-state='open'] .chevron {
+  transform: rotate(180deg);
+}
+
+@include reduced-motion {
+  .chevron {
+    transition: none;
+  }
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.count {
+  flex-shrink: 0;
+  color: $color-text-muted;
+  font-size: 0.8125rem;
+
+  @include tabular-nums;
+}
+
+.content {
+  padding: 0 $space-3 $space-3;
+  border-top: 1px solid $color-border;
+}
+
+.empty {
+  margin: $space-3 0;
+  color: $color-text-muted;
+  font-size: 0.875rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $space-3;
+  margin-top: $space-3;
+
+  @include respond-to(tablet) {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-1 $space-4;
+  margin: $space-3 0 0;
+  padding: $space-2 0 0;
+  border-top: 1px solid $color-border;
+  list-style: none;
+  color: $color-text-muted;
+  font-size: 0.8125rem;
+
+  @include tabular-nums;
+}
