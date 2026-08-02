@@ -1,0 +1,78 @@
+.root {
+  position: relative;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+
+  @include touch-target;
+
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-bg;
+
+  &:focus-within {
+    @include focus-ring;
+  }
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 $space-3;
+  border: none;
+  background: transparent;
+  color: $color-text;
+  font-size: 0.9375rem;
+
+  &::placeholder {
+    color: $color-text-disabled;
+  }
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: $touch-target-min;
+  height: $touch-target-min;
+  flex-shrink: 0;
+  color: $color-text-muted;
+  font-size: 1rem;
+}
+
+// Живёт внутри открытой модалки — должен быть выше её контента, не просто
+// $z-sticky, как в shared/ui/Combobox. Отдельного токена под "поповер в
+// модалке" нет, $z-toast — единственный запас выше $z-modal.
+.menu {
+  position: absolute;
+  z-index: $z-toast;
+  padding: $space-1;
+  max-height: 240px;
+  overflow-y: auto;
+
+  @include card-surface;
+
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  padding: $space-2 $space-3;
+  border-radius: $radius-sm;
+  font-size: 0.9375rem;
+  color: $color-text;
+  cursor: pointer;
+}
+
+.highlighted {
+  background: $color-accent-cyan-muted;
+  color: $color-accent-cyan;
+}
