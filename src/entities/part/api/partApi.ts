@@ -8,6 +8,11 @@ export interface GetPartsArgs {
   includeArchived?: boolean
 }
 
+export interface UpdatePartArgs {
+  id: PartId
+  isArchived: boolean
+}
+
 // assembly_parts: assembly (rel), part (rel), quantity — см. docs/data-model.md.
 interface AssemblyPartRecord {
   id: string
@@ -108,7 +113,31 @@ export const partApi = baseApi.injectEndpoints({
             ]
           : [{ type: 'Part' as const, id: `PARENT_${partId}` }],
     }),
+
+    updatePart: builder.mutation<Part, UpdatePartArgs>({
+      query: ({ id, ...body }) => ({ collection: 'parts', method: 'update', id, body }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Part', id },
+        { type: 'Part', id: 'LIST' },
+      ],
+    }),
+
+    deletePart: builder.mutation<null, PartId>({
+      query: (id) => ({ collection: 'parts', method: 'delete', id }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Part', id },
+        { type: 'Part', id: 'LIST' },
+      ],
+    }),
   }),
 })
 
-export const { useGetPartsQuery, useGetPartsForAssemblyQuery, useGetPartChildrenQuery } = partApi
+export const {
+  useGetPartsQuery,
+  useGetPartsForAssemblyQuery,
+  useGetPartChildrenQuery,
+  useLazyGetPartsForAssemblyQuery,
+  useLazyGetPartChildrenQuery,
+  useUpdatePartMutation,
+  useDeletePartMutation,
+} = partApi

@@ -8,12 +8,48 @@
   border-radius: $radius-md;
   background: color-mix(in srgb, var(--accent) 8%, $color-bg);
   border-left: 4px solid var(--accent);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
 
   @include tap-feedback;
 }
 
 .archived {
   opacity: 0.55;
+}
+
+// Cyan — единственный акцент выделения (CLAUDE.md → "Дизайн-направление").
+.selected {
+  outline-color: $color-accent-cyan;
+  background: color-mix(in srgb, $color-accent-cyan 10%, color-mix(in srgb, var(--accent) 8%, $color-bg));
+}
+
+.selectToggle {
+  position: absolute;
+  top: $space-2;
+  right: $space-2;
+  opacity: 1;
+}
+
+// На тач-устройствах чекбокс виден всегда (нет ховера); от планшета и выше —
+// по ховеру/фокусу, как в ТЗ, но не теряется при выделении.
+@include respond-to(tablet) {
+  .selectToggle {
+    opacity: 0;
+    transition: opacity $duration-fast $easing-standard;
+  }
+
+  .root:hover .selectToggle,
+  .root:focus-within .selectToggle,
+  .selected .selectToggle {
+    opacity: 1;
+  }
+}
+
+@include reduced-motion {
+  .selectToggle {
+    transition: none;
+  }
 }
 
 .icon {

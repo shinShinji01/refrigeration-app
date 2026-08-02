@@ -1,0 +1,49 @@
+// Верхний правый угол экрана, поверх списка (docs/spec.md → "Список карточек").
+// На мобильном сайдбар — горизонтальная полоса сверху ($sidebar-mobile-bar-height,
+// z-index выше нашего), поэтому панель ниже неё; на планшете+ сайдбар уходит
+// в левую узкую полосу и верх освобождается.
+.root {
+  position: fixed;
+  top: calc($sidebar-mobile-bar-height + $space-2);
+  right: $space-4;
+  z-index: $z-sticky;
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-2 $space-3;
+
+  @include card-surface;
+
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+
+  @include respond-to(tablet) {
+    top: $space-4;
+  }
+}
+
+.count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $color-text;
+
+  @include tabular-nums;
+}
+
+.actions {
+  display: flex;
+  gap: $space-1;
+}
+
+.archive {
+  &:hover {
+    background: $color-amber-muted;
+    color: $color-amber;
+  }
+}
+
+.delete {
+  &:hover {
+    background: $color-red-muted;
+    color: $color-red;
+  }
+}

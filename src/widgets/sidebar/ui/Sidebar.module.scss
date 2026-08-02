@@ -27,7 +27,7 @@
 .bar {
   display: flex;
   align-items: center;
-  height: 56px;
+  height: $sidebar-mobile-bar-height;
   padding: 0 $space-2;
   flex-shrink: 0;
 

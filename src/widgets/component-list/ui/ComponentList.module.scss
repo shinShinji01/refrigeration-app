@@ -7,3 +7,28 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
+
+.split {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+
+  @include respond-to(tablet) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.parentCell {
+  @include respond-to(tablet) {
+    position: sticky;
+    top: $space-3;
+    z-index: $z-sticky;
+    flex: 0 0 320px;
+  }
+}
+
+.childrenCell {
+  min-width: 0;
+  flex: 1;
+}

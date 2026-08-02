@@ -1,10 +1,15 @@
 import { baseApi } from '@/shared/api'
 import { buildUnitsFilter } from '../lib/buildUnitsFilter'
-import type { RefrigerationUnit } from '../model/types'
+import type { RefrigerationUnit, UnitId } from '../model/types'
 
 export interface GetUnitsArgs {
   search?: string
   includeArchived?: boolean
+}
+
+export interface UpdateUnitArgs {
+  id: UnitId
+  isArchived: boolean
 }
 
 export const unitApi = baseApi.injectEndpoints({
@@ -36,7 +41,23 @@ export const unitApi = baseApi.injectEndpoints({
             ]
           : [{ type: 'Unit' as const, id: 'LIST' }],
     }),
+
+    updateUnit: builder.mutation<RefrigerationUnit, UpdateUnitArgs>({
+      query: ({ id, ...body }) => ({ collection: 'units', method: 'update', id, body }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Unit', id },
+        { type: 'Unit', id: 'LIST' },
+      ],
+    }),
+
+    deleteUnit: builder.mutation<null, UnitId>({
+      query: (id) => ({ collection: 'units', method: 'delete', id }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Unit', id },
+        { type: 'Unit', id: 'LIST' },
+      ],
+    }),
   }),
 })
 
-export const { useGetUnitsQuery } = unitApi
+export const { useGetUnitsQuery, useUpdateUnitMutation, useDeleteUnitMutation } = unitApi

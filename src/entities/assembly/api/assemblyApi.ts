@@ -1,11 +1,16 @@
 import { baseApi, pb } from '@/shared/api'
 import { buildNameFilter } from '@/shared/lib/utils'
 import type { UnitId } from '@/entities/refrigeration-unit'
-import type { Assembly, AssemblyWithQuantity } from '../model/types'
+import type { Assembly, AssemblyId, AssemblyWithQuantity } from '../model/types'
 
 export interface GetAssembliesArgs {
   search?: string
   includeArchived?: boolean
+}
+
+export interface UpdateAssemblyArgs {
+  id: AssemblyId
+  isArchived: boolean
 }
 
 // unit_assemblies: unit (rel), assembly (rel), quantity — см. docs/data-model.md.
@@ -75,7 +80,29 @@ export const assemblyApi = baseApi.injectEndpoints({
             ]
           : [{ type: 'Assembly' as const, id: `UNIT_${unitId}` }],
     }),
+
+    updateAssembly: builder.mutation<Assembly, UpdateAssemblyArgs>({
+      query: ({ id, ...body }) => ({ collection: 'assemblies', method: 'update', id, body }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Assembly', id },
+        { type: 'Assembly', id: 'LIST' },
+      ],
+    }),
+
+    deleteAssembly: builder.mutation<null, AssemblyId>({
+      query: (id) => ({ collection: 'assemblies', method: 'delete', id }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Assembly', id },
+        { type: 'Assembly', id: 'LIST' },
+      ],
+    }),
   }),
 })
 
-export const { useGetAssembliesQuery, useGetAssembliesForUnitQuery } = assemblyApi
+export const {
+  useGetAssembliesQuery,
+  useGetAssembliesForUnitQuery,
+  useLazyGetAssembliesForUnitQuery,
+  useUpdateAssemblyMutation,
+  useDeleteAssemblyMutation,
+} = assemblyApi

@@ -48,6 +48,11 @@ $radius-lg: 12px;
 // --- Тач-таргеты ------------------------------------------------------
 $touch-target-min: 44px;
 
+// --- Сайдбар ------------------------------------------------------------
+// Высота горизонтальной полосы сайдбара в мобильной раскладке — нужна другим
+// fixed-элементам (например, sticky-панели действий), чтобы не залезать под неё.
+$sidebar-mobile-bar-height: 56px;
+
 // --- Типографика ------------------------------------------------------
 $font-family-base: system-ui, -apple-system, 'Segoe UI', roboto, sans-serif;
 $font-family-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', consolas, monospace;

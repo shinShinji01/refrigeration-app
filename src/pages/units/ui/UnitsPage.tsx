@@ -10,7 +10,7 @@ export const UnitsPage = () => {
   const [includeArchived, setIncludeArchived] = useState(false)
   const debouncedSearch = useDebounce(search, 300)
 
-  const { items, isLoading, isIdle } = useFilteredComponents({
+  const { parent, childItems, isLoading } = useFilteredComponents({
     search: debouncedSearch,
     includeArchived,
   })
@@ -24,7 +24,7 @@ export const UnitsPage = () => {
         includeArchived={includeArchived}
         onIncludeArchivedChange={setIncludeArchived}
       />
-      <ComponentList items={items} isLoading={isLoading} isIdle={isIdle} />
+      <ComponentList parent={parent} childItems={childItems} isLoading={isLoading} />
     </div>
   )
 }

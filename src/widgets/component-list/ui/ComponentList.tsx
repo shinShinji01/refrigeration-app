@@ -1,41 +1,83 @@
 import type { ComponentListItem } from '@/features/cascade-filter'
-import { UnitCard } from '@/entities/refrigeration-unit'
-import { AssemblyCard } from '@/entities/assembly'
-import { PartCard } from '@/entities/part'
+import { getComponentListItemKey } from '@/features/cascade-filter'
+import { useCardSelection } from '@/features/card-selection'
+import { SelectionToolbar, useBulkActions } from '@/widgets/selection-toolbar'
 import { EmptyState } from '@/shared/ui'
+import { ComponentListCard } from './ComponentListCard'
 import styles from './ComponentList.module.scss'
 
 interface ComponentListProps {
-  items: ComponentListItem[]
+  parent: ComponentListItem | null
+  childItems: ComponentListItem[]
   isLoading: boolean
-  // Ничего не выбрано и поиск пуст — по ТЗ список пуст без сообщения
-  // (docs/spec.md → "Список сборочных единиц").
-  isIdle: boolean
 }
 
-export const ComponentList = ({ items, isLoading, isIdle }: ComponentListProps) => {
-  if (isIdle || isLoading) {
+const renderCard = (
+  item: ComponentListItem,
+  isSelected: (key: string) => boolean,
+  toggleSelected: (key: string) => void,
+) => {
+  const itemKey = getComponentListItemKey(item)
+  return (
+    <ComponentListCard
+      key={itemKey}
+      item={item}
+      itemKey={itemKey}
+      selected={isSelected(itemKey)}
+      onToggleSelected={toggleSelected}
+    />
+  )
+}
+
+// При выбранном родителе (установка/узел) с непустыми детьми — раскладка
+// в две ячейки: слева сам родитель, справа сетка его детей. Иначе — обычная
+// плоская сетка (список установок, глобальный поиск, лист без детей).
+export const ComponentList = ({ parent, childItems, isLoading }: ComponentListProps) => {
+  const { isSelected, toggleSelected } = useCardSelection()
+
+  const allItems = parent ? [parent, ...childItems] : childItems
+  const selectedItems = allItems.filter((item) => isSelected(getComponentListItemKey(item)))
+  const { isBusy, archiveSelected, unarchiveSelected, deleteSelected } = useBulkActions(selectedItems)
+
+  if (isLoading) {
     return null
   }
 
+  const toolbar = (
+    <SelectionToolbar
+      count={selectedItems.length}
+      isBusy={isBusy}
+      onArchive={archiveSelected}
+      onUnarchive={unarchiveSelected}
+      onDelete={deleteSelected}
+    />
+  )
+
+  if (parent && childItems.length > 0) {
+    return (
+      <>
+        {toolbar}
+        <div className={styles.split}>
+          <div className={styles.parentCell}>{renderCard(parent, isSelected, toggleSelected)}</div>
+          <div className={styles.childrenCell}>
+            <div className={styles.grid}>
+              {childItems.map((item) => renderCard(item, isSelected, toggleSelected))}
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  const items = parent ? [parent] : childItems
   if (items.length === 0) {
     return <EmptyState message="Ничего не найдено" />
   }
 
   return (
-    <div className={styles.grid}>
-      {items.map((item) => {
-        switch (item.kind) {
-          case 'unit':
-            return <UnitCard key={`unit-${item.unit.id}`} unit={item.unit} />
-          case 'assembly':
-            return (
-              <AssemblyCard key={`assembly-${item.assembly.id}`} assembly={item.assembly} quantity={item.quantity} />
-            )
-          case 'part':
-            return <PartCard key={`part-${item.part.id}`} part={item.part} quantity={item.quantity} />
-        }
-      })}
-    </div>
+    <>
+      {toolbar}
+      <div className={styles.grid}>{items.map((item) => renderCard(item, isSelected, toggleSelected))}</div>
+    </>
   )
 }

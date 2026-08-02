@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { baseApi } from '@/shared/api'
 import { cascadeFilterReducer } from '@/features/cascade-filter'
+import { cardSelectionReducer } from '@/features/card-selection'
 
 export const store = configureStore({
   reducer: {
     [baseApi.reducerPath]: baseApi.reducer,
     cascadeFilter: cascadeFilterReducer,
+    cardSelection: cardSelectionReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(baseApi.middleware),
 })

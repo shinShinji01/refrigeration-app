@@ -5,9 +5,11 @@ import type { RefrigerationUnit } from '../model/types'
 
 interface UnitCardProps {
   unit: RefrigerationUnit
+  selected?: boolean
+  onSelectedChange?: (selected: boolean) => void
 }
 
-export const UnitCard = ({ unit }: UnitCardProps) => {
+export const UnitCard = ({ unit, selected, onSelectedChange }: UnitCardProps) => {
   const { color, icon } = COMPONENT_TYPES.unit
   const { data: assemblies = [] } = useGetAssembliesForUnitQuery(unit.id)
   // Если чертёж не заполнен — показываем id (docs/spec.md → "Общие моменты").
@@ -20,6 +22,8 @@ export const UnitCard = ({ unit }: UnitCardProps) => {
       title={unit.name}
       subtitle={subtitle}
       isArchived={unit.isArchived}
+      selected={selected}
+      onSelectedChange={onSelectedChange}
     >
       <ChildrenSummaryList
         items={assemblies.map((assembly) => ({

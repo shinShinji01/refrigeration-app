@@ -19,16 +19,17 @@ export interface UseFilteredComponentsArgs {
 }
 
 interface UseFilteredComponentsResult {
-  items: ComponentListItem[]
+  // Выбранный элемент (установка/узел/деталь), рядом с которым показываются
+  // его дети — null, когда сужения ещё нет (список установок, глобальный поиск).
+  parent: ComponentListItem | null
+  childItems: ComponentListItem[]
   isLoading: boolean
-  // Ничего не выбрано и поиск пуст — по ТЗ список ничего не показывает,
-  // это не то же самое, что «есть фильтр, но результатов нет».
-  isIdle: boolean
 }
 
-// Ветки поведения списка карточек — см. "Контекст" в плане прохода:
-// ничего не выбрано (пусто/глобальный поиск) → установка → узел → деталь,
-// каждый следующий уровень сужает список до себя + своих детей.
+// Ветки поведения списка карточек: установка не выбрана и поиск пуст — все
+// установки; установка не выбрана и есть текст — глобальный поиск по трём
+// типам; иначе — установка → узел → деталь, каждый следующий уровень сужает
+// до себя (parent) и своих детей (childItems).
 export const useFilteredComponents = ({
   search,
   includeArchived,
@@ -36,70 +37,75 @@ export const useFilteredComponents = ({
   const { unitId, assemblyId, partId } = useAppSelector((state) => state.cascadeFilter)
   const isGlobalSearch = !unitId && search.trim().length > 0
 
-  const globalUnits = useGetUnitsQuery(isGlobalSearch ? { search, includeArchived } : skipToken)
-  const globalAssemblies = useGetAssembliesQuery(isGlobalSearch ? { search, includeArchived } : skipToken)
-  const globalParts = useGetPartsQuery(isGlobalSearch ? { search, includeArchived } : skipToken)
+  // Поиск по name/drawingNumbers выполняется на клиенте (filterChildren), а не через
+  // PocketBase-фильтр: SQLite LIKE регистронезависим только для ASCII, а названия
+  // и номера чертежей — кириллица (см. docs/glossary.md).
+  const globalUnits = useGetUnitsQuery(isGlobalSearch ? { includeArchived } : skipToken)
+  const globalAssemblies = useGetAssembliesQuery(isGlobalSearch ? { includeArchived } : skipToken)
+  const globalParts = useGetPartsQuery(isGlobalSearch ? { includeArchived } : skipToken)
 
-  const units = useGetUnitsQuery(unitId ? { includeArchived } : skipToken)
+  const units = useGetUnitsQuery({ includeArchived })
   const unitAssemblies = useGetAssembliesForUnitQuery(unitId ?? skipToken)
   const assemblyParts = useGetPartsForAssemblyQuery(assemblyId ?? skipToken)
 
   if (isGlobalSearch) {
+    const matchedUnits = filterChildren(globalUnits.data ?? [], search, includeArchived)
+    const matchedAssemblies = filterChildren(globalAssemblies.data ?? [], search, includeArchived)
+    const matchedParts = filterChildren(globalParts.data ?? [], search, includeArchived)
+
     return {
-      items: [
-        ...(globalUnits.data ?? []).map((unit): ComponentListItem => ({ kind: 'unit', unit })),
-        ...(globalAssemblies.data ?? []).map((assembly): ComponentListItem => ({ kind: 'assembly', assembly })),
-        ...(globalParts.data ?? []).map((part): ComponentListItem => ({ kind: 'part', part })),
+      parent: null,
+      childItems: [
+        ...matchedUnits.map((unit): ComponentListItem => ({ kind: 'unit', unit })),
+        ...matchedAssemblies.map((assembly): ComponentListItem => ({ kind: 'assembly', assembly })),
+        ...matchedParts.map((part): ComponentListItem => ({ kind: 'part', part })),
       ],
       isLoading: globalUnits.isLoading || globalAssemblies.isLoading || globalParts.isLoading,
-      isIdle: false,
     }
   }
 
   if (!unitId) {
-    return { items: [], isLoading: false, isIdle: true }
+    return {
+      parent: null,
+      childItems: units.data?.map((unit): ComponentListItem => ({ kind: 'unit', unit })) ?? [],
+      isLoading: units.isLoading,
+    }
   }
 
   const unit = units.data?.find((candidate) => candidate.id === unitId)
   if (!unit) {
-    return { items: [], isLoading: units.isLoading, isIdle: false }
+    return { parent: null, childItems: [], isLoading: units.isLoading }
   }
 
   if (!assemblyId) {
     const assemblies = filterChildren(unitAssemblies.data ?? [], search, includeArchived)
     return {
-      items: [
-        { kind: 'unit', unit },
-        ...assemblies.map(
-          (assembly): ComponentListItem => ({ kind: 'assembly', assembly, quantity: assembly.quantity }),
-        ),
-      ],
+      parent: { kind: 'unit', unit },
+      childItems: assemblies.map(
+        (assembly): ComponentListItem => ({ kind: 'assembly', assembly, quantity: assembly.quantity }),
+      ),
       isLoading: unitAssemblies.isLoading,
-      isIdle: false,
     }
   }
 
   const assembly = unitAssemblies.data?.find((candidate) => candidate.id === assemblyId)
   if (!assembly) {
-    return { items: [], isLoading: unitAssemblies.isLoading || assemblyParts.isLoading, isIdle: false }
+    return { parent: null, childItems: [], isLoading: unitAssemblies.isLoading || assemblyParts.isLoading }
   }
 
   if (!partId) {
     const parts = filterChildren(assemblyParts.data ?? [], search, includeArchived)
     return {
-      items: [
-        { kind: 'assembly', assembly, quantity: assembly.quantity },
-        ...parts.map((part): ComponentListItem => ({ kind: 'part', part, quantity: part.quantity })),
-      ],
+      parent: { kind: 'assembly', assembly, quantity: assembly.quantity },
+      childItems: parts.map((part): ComponentListItem => ({ kind: 'part', part, quantity: part.quantity })),
       isLoading: assemblyParts.isLoading,
-      isIdle: false,
     }
   }
 
   const part = assemblyParts.data?.find((candidate) => candidate.id === partId)
   return {
-    items: part ? [{ kind: 'part', part, quantity: part.quantity }] : [],
+    parent: part ? { kind: 'part', part, quantity: part.quantity } : null,
+    childItems: [],
     isLoading: assemblyParts.isLoading,
-    isIdle: false,
   }
 }

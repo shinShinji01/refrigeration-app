@@ -8,9 +8,11 @@ interface AssemblyCardProps {
   // Количество на установку — известно только когда узел показан в контексте
   // конкретной установки (unit_assemblies), не в результатах глобального поиска.
   quantity?: number
+  selected?: boolean
+  onSelectedChange?: (selected: boolean) => void
 }
 
-export const AssemblyCard = ({ assembly, quantity }: AssemblyCardProps) => {
+export const AssemblyCard = ({ assembly, quantity, selected, onSelectedChange }: AssemblyCardProps) => {
   const { color, icon } = COMPONENT_TYPES.assembly
   const { data: parts = [] } = useGetPartsForAssemblyQuery(assembly.id)
 
@@ -18,7 +20,15 @@ export const AssemblyCard = ({ assembly, quantity }: AssemblyCardProps) => {
   const title = quantity === undefined ? assembly.name : `${assembly.name} × ${quantity}`
 
   return (
-    <ComponentCard icon={icon} accentColor={color} title={title} subtitle={subtitle} isArchived={assembly.isArchived}>
+    <ComponentCard
+      icon={icon}
+      accentColor={color}
+      title={title}
+      subtitle={subtitle}
+      isArchived={assembly.isArchived}
+      selected={selected}
+      onSelectedChange={onSelectedChange}
+    >
       <ChildrenSummaryList
         items={parts.map((part) => ({ id: part.id, label: part.name, quantity: part.quantity }))}
       />

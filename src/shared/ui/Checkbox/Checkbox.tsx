@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import * as RadixCheckbox from '@radix-ui/react-checkbox'
 import CheckIcon from '@/shared/assets/icons/check.svg?react'
 import styles from './Checkbox.module.scss'
@@ -7,9 +8,12 @@ interface CheckboxProps {
   checked: boolean
   onCheckedChange: (checked: boolean) => void
   label: string
+  // Подпись остаётся доступной для скринридера, но не занимает место —
+  // нужно для чекбокса в углу карточки (docs/spec.md → "Список карточек").
+  hideLabel?: boolean
 }
 
-export const Checkbox = ({ id, checked, onCheckedChange, label }: CheckboxProps) => (
+export const Checkbox = ({ id, checked, onCheckedChange, label, hideLabel }: CheckboxProps) => (
   <label className={styles.root} htmlFor={id}>
     <RadixCheckbox.Root
       id={id}
@@ -21,6 +25,6 @@ export const Checkbox = ({ id, checked, onCheckedChange, label }: CheckboxProps)
         <CheckIcon className={styles.icon} aria-hidden="true" />
       </RadixCheckbox.Indicator>
     </RadixCheckbox.Root>
-    <span className={styles.label}>{label}</span>
+    <span className={clsx(styles.label, hideLabel && styles.visuallyHidden)}>{label}</span>
   </label>
 )
