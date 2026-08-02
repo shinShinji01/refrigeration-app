@@ -30,8 +30,8 @@ export const Combobox = <T,>({
   disabled,
   'aria-label': ariaLabel,
 }: ComboboxProps<T>) => {
-  const [inputValue, setInputValue] = useState('')
-  const query = inputValue.trim().toLowerCase()
+  const [searchValue, setSearchValue] = useState('')
+  const query = searchValue.trim().toLowerCase()
   const filteredItems = query ? items.filter((item) => getItemLabel(item).toLowerCase().includes(query)) : items
 
   const { refs, floatingStyles } = useFloating({
@@ -53,8 +53,19 @@ export const Combobox = <T,>({
       items: filteredItems,
       selectedItem: value,
       itemToString: (item) => (item ? getItemLabel(item) : ''),
-      onInputValueChange: ({ inputValue: nextInputValue }) => setInputValue(nextInputValue ?? ''),
-      onSelectedItemChange: ({ selectedItem }) => onChange(selectedItem ?? null),
+      // Фильтруем список только по тому, что пользователь реально печатает.
+      // Downshift сам проставляет в inputValue label выбранного пункта — если
+      // отслеживать любые изменения подряд, список после выбора фильтровался
+      // бы до одного этого пункта, и при повторном открытии остальные не видны.
+      onInputValueChange: ({ inputValue: nextInputValue, type }) => {
+        if (type === useCombobox.stateChangeTypes.InputChange) {
+          setSearchValue(nextInputValue ?? '')
+        }
+      },
+      onSelectedItemChange: ({ selectedItem }) => {
+        onChange(selectedItem ?? null)
+        setSearchValue('')
+      },
     })
 
   // Меню всегда смонтировано (скрывается через display:none на обёртке, не
