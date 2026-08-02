@@ -24,30 +24,33 @@
   background: color-mix(in srgb, $color-accent-cyan 10%, color-mix(in srgb, var(--accent) 8%, $color-bg));
 }
 
-.selectToggle {
+.cornerActions {
   position: absolute;
   top: $space-2;
   right: $space-2;
+  display: flex;
+  align-items: center;
+  gap: $space-1;
   opacity: 1;
 }
 
-// На тач-устройствах чекбокс виден всегда (нет ховера); от планшета и выше —
-// по ховеру/фокусу, как в ТЗ, но не теряется при выделении.
+// На тач-устройствах чекбокс/кнопка редактирования видны всегда (нет ховера);
+// от планшета и выше — по ховеру/фокусу, как в ТЗ, но не теряются при выделении.
 @include respond-to(tablet) {
-  .selectToggle {
+  .cornerActions {
     opacity: 0;
     transition: opacity $duration-fast $easing-standard;
   }
 
-  .root:hover .selectToggle,
-  .root:focus-within .selectToggle,
-  .selected .selectToggle {
+  .root:hover .cornerActions,
+  .root:focus-within .cornerActions,
+  .selected .cornerActions {
     opacity: 1;
   }
 }
 
 @include reduced-motion {
-  .selectToggle {
+  .cornerActions {
     transition: none;
   }
 }

@@ -7,10 +7,11 @@ export interface GetUnitsArgs {
   includeArchived?: boolean
 }
 
-export interface UpdateUnitArgs {
-  id: UnitId
-  isArchived: boolean
-}
+// Архивация (bulk-панель) шлёт только isArchived, модалка редактирования —
+// остальные поля; оба через одну мутацию, PocketBase принимает частичный body.
+export type UpdateUnitArgs = { id: UnitId } & Partial<
+  Pick<RefrigerationUnit, 'name' | 'drawingNumbers' | 'commissionedAt' | 'isArchived'>
+>
 
 export const unitApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({

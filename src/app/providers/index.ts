@@ -1,2 +1,3 @@
 export { AppProviders } from './AppProviders'
-export { useModal } from './modalContext'
+export { useModal, MODAL_REGISTRY } from './modalContext'
+export type { ModalProps } from './modalContext'

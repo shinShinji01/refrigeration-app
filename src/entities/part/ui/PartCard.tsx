@@ -10,11 +10,12 @@ interface PartCardProps {
   quantity?: number
   selected?: boolean
   onSelectedChange?: (selected: boolean) => void
+  onEdit?: () => void
 }
 
 // Рекурсивный состав детали (part_parts) показывается только текстом внутри
 // карточки — отдельных карточек для дочерних деталей нет (docs/decisions.md №9).
-export const PartCard = ({ part, quantity, selected, onSelectedChange }: PartCardProps) => {
+export const PartCard = ({ part, quantity, selected, onSelectedChange, onEdit }: PartCardProps) => {
   const { color, icon } = COMPONENT_TYPES.part
   const { data: children = [] } = useGetPartChildrenQuery(part.id)
 
@@ -30,6 +31,7 @@ export const PartCard = ({ part, quantity, selected, onSelectedChange }: PartCar
       isArchived={part.isArchived}
       selected={selected}
       onSelectedChange={onSelectedChange}
+      onEdit={onEdit}
     >
       <ChildrenSummaryList
         items={children.map((child) => ({ id: child.id, label: child.name, quantity: child.quantity }))}

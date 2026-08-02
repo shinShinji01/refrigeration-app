@@ -1,6 +1,8 @@
 import type { ComponentType, CSSProperties, ReactNode, SVGProps } from 'react'
 import clsx from 'clsx'
+import EditIcon from '@/shared/assets/icons/edit.svg?react'
 import { Checkbox } from '../Checkbox'
+import { IconButton } from '../IconButton'
 import styles from './ComponentCard.module.scss'
 
 interface ComponentCardProps {
@@ -16,6 +18,8 @@ interface ComponentCardProps {
   selected?: boolean
   onSelectedChange?: (selected: boolean) => void
   selectLabel?: string
+  // Кнопка редактирования по ховеру/фокусу (docs/spec.md → "Список карточек").
+  onEdit?: () => void
 }
 
 // Общая карточка для всех трёх типов (установка/узел/деталь). Конкретика —
@@ -30,6 +34,7 @@ export const ComponentCard = ({
   selected,
   onSelectedChange,
   selectLabel,
+  onEdit,
 }: ComponentCardProps) => {
   const style = { '--accent': accentColor } satisfies CSSProperties
 
@@ -38,15 +43,18 @@ export const ComponentCard = ({
       className={clsx(styles.root, isArchived && styles.archived, selected && styles.selected)}
       style={style}
     >
-      {onSelectedChange ? (
-        <span className={styles.selectToggle}>
-          <Checkbox
-            checked={selected ?? false}
-            onCheckedChange={onSelectedChange}
-            label={selectLabel ?? title}
-            hideLabel
-          />
-        </span>
+      {onSelectedChange || onEdit ? (
+        <div className={styles.cornerActions}>
+          {onEdit ? <IconButton icon={EditIcon} label={`Редактировать: ${title}`} onClick={onEdit} /> : null}
+          {onSelectedChange ? (
+            <Checkbox
+              checked={selected ?? false}
+              onCheckedChange={onSelectedChange}
+              label={selectLabel ?? title}
+              hideLabel
+            />
+          ) : null}
+        </div>
       ) : null}
       <Icon className={styles.icon} aria-hidden="true" />
       <div className={styles.body}>
