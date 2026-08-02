@@ -42,13 +42,13 @@ export const ComponentCard = ({
 }: ComponentCardProps) => {
   const style = { '--accent': accentColor } satisfies CSSProperties
 
-  return (
+  const card = (
     <article
       className={clsx(
         styles.root,
         isArchived && styles.archived,
         selected && styles.selected,
-        compact && styles.compact,
+        compact && styles.compactCard,
       )}
       style={style}
     >
@@ -73,4 +73,9 @@ export const ComponentCard = ({
       </div>
     </article>
   )
+
+  // От планшета и выше слот держит фиксированную высоту в сетке, а сама
+  // карточка внутри абсолютно спозиционирована — разворот по ховеру не
+  // двигает соседние ряды сетки, а рисуется поверх них (см. .module.scss).
+  return compact ? <div className={styles.compactSlot}>{card}</div> : card
 }
