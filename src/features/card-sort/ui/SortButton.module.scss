@@ -1,0 +1,70 @@
+.root {
+  position: relative;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  height: $touch-target-min;
+  padding: 0 $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-bg;
+  color: $color-text;
+  font-size: 0.875rem;
+
+  @include tap-feedback;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &[aria-expanded='true'] {
+    border-color: $color-accent-cyan;
+    color: $color-accent-cyan;
+  }
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + #{$space-1});
+  right: 0;
+  z-index: $z-sticky;
+  min-width: 180px;
+  margin: 0;
+  padding: $space-1;
+  list-style: none;
+
+  @include card-surface;
+
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+}
+
+.item {
+  width: 100%;
+  padding: $space-2 $space-3;
+  border-radius: $radius-sm;
+  color: $color-text;
+  font-size: 0.9375rem;
+  text-align: left;
+
+  &:hover {
+    background: $color-accent-cyan-muted;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.active {
+  color: $color-accent-cyan;
+  font-weight: 600;
+}
