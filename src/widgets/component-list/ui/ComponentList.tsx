@@ -1,7 +1,7 @@
 import type { ComponentListItem } from '@/features/cascade-filter'
 import { getComponentListItemKey } from '@/features/cascade-filter'
 import { useCardSelection } from '@/features/card-selection'
-import { useCardSort, sortComponentItems, splitByArchived, SortButton } from '@/features/card-sort'
+import { useCardSort, sortComponentItems, splitByArchived } from '@/features/card-sort'
 import { SelectionToolbar, useBulkActions } from '@/widgets/selection-toolbar'
 import { EmptyState } from '@/shared/ui'
 import { ComponentListCard } from './ComponentListCard'
@@ -86,12 +86,6 @@ export const ComponentList = ({ parent, childItems, isLoading }: ComponentListPr
     return (
       <>
         {toolbar}
-        {/* Кнопка сортировки — над всей раскладкой, а не только над сеткой
-            детей: иначе левая (родитель) и правая колонки стартуют на разной
-            высоте. */}
-        <div className={styles.controls}>
-          <SortButton />
-        </div>
         <div className={styles.split}>
           <div className={styles.parentCell}>{renderCard(parent, isSelected, toggleSelected)}</div>
           <div className={styles.childrenCell}>{renderGrid(sortedChildren, isSelected, toggleSelected)}</div>
@@ -117,9 +111,6 @@ export const ComponentList = ({ parent, childItems, isLoading }: ComponentListPr
   return (
     <>
       {toolbar}
-      <div className={styles.controls}>
-        <SortButton />
-      </div>
       {renderGrid(items, isSelected, toggleSelected)}
     </>
   )

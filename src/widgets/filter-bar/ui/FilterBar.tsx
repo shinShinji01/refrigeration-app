@@ -1,5 +1,6 @@
 import { Checkbox } from '@/shared/ui'
 import { CascadeFilter } from '@/features/cascade-filter'
+import { SortButton } from '@/features/card-sort'
 import styles from './FilterBar.module.scss'
 
 interface FilterBarProps {
@@ -32,6 +33,11 @@ export const FilterBar = ({
         label="Показать архивные"
       />
     </div>
-    <CascadeFilter includeArchived={includeArchived} />
+    <div className={styles.filterRow}>
+      <div className={styles.cascadeSlot}>
+        <CascadeFilter includeArchived={includeArchived} />
+      </div>
+      <SortButton />
+    </div>
   </div>
 )
