@@ -66,16 +66,26 @@
 // обрезается с плавным фейдом, по ховеру/фокусу карточка разворачивается
 // целиком. Только от планшета и выше: на мобильном сетка в один столбец,
 // сравнивать высоту соседних карточек не с чем (docs/spec.md → "Список карточек").
+// .compactSlot держит фиксированную высоту в сетке ВСЕГДА — сама карточка
+// внутри абсолютно спозиционирована относительно него, поэтому разворот по
+// ховеру не меняет высоту ячейки сетки и не двигает следующие ряды, а рисуется
+// поверх них (z-index). Без этого слоя разворот раздвигал бы сетку.
 @include respond-to(tablet) {
-  .compact {
+  .compactSlot {
+    position: relative;
     height: 200px;
+  }
+
+  .compactCard {
+    position: absolute;
+    inset: 0;
     overflow: hidden;
     transition:
       height $duration-base $easing-standard,
       box-shadow $duration-base $easing-standard;
   }
 
-  .compact::after {
+  .compactCard::after {
     content: '';
     position: absolute;
     inset: auto 0 0;
@@ -84,23 +94,27 @@
     pointer-events: none;
   }
 
-  .compact:hover,
-  .compact:focus-within {
+  .compactCard:hover,
+  .compactCard:focus-within {
+    // inset: 0 (top И bottom = 0) сам по себе диктует высоту абсолютно
+    // спозиционированного элемента — bottom: auto освобождает её, чтобы
+    // height: auto реально считался по контенту, а не по слоту.
+    bottom: auto;
     height: auto;
     max-height: 420px;
     overflow-y: auto;
-    z-index: 2;
+    z-index: 5;
     box-shadow: 0 8px 20px rgb(0 0 0 / 15%);
   }
 
-  .compact:hover::after,
-  .compact:focus-within::after {
+  .compactCard:hover::after,
+  .compactCard:focus-within::after {
     opacity: 0;
   }
 }
 
 @include reduced-motion {
-  .compact {
+  .compactCard {
     transition: none;
   }
 }
