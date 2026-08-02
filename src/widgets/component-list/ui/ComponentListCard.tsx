@@ -11,38 +11,51 @@ interface ComponentListCardProps {
   itemKey: string
   selected: boolean
   onToggleSelected: (key: string) => void
+  compact?: boolean
 }
 
 // memo — карточек в списке могут быть сотни (CLAUDE.md → "Оптимизация").
 // onToggleSelected — стабильная ссылка из useCardSelection, itemKey — примитив,
 // поэтому смена выделения одной карточки не перерисовывает остальные.
-export const ComponentListCard = memo(({ item, itemKey, selected, onToggleSelected }: ComponentListCardProps) => {
-  const { open } = useModal()
-  const onSelectedChange = useCallback(() => onToggleSelected(itemKey), [onToggleSelected, itemKey])
-  const onEdit = useCallback(() => open(EDIT_COMPONENT_MODAL, { item }), [open, item])
+export const ComponentListCard = memo(
+  ({ item, itemKey, selected, onToggleSelected, compact }: ComponentListCardProps) => {
+    const { open } = useModal()
+    const onSelectedChange = useCallback(() => onToggleSelected(itemKey), [onToggleSelected, itemKey])
+    const onEdit = useCallback(() => open(EDIT_COMPONENT_MODAL, { item }), [open, item])
 
-  switch (item.kind) {
-    case 'unit':
-      return <UnitCard unit={item.unit} selected={selected} onSelectedChange={onSelectedChange} onEdit={onEdit} />
-    case 'assembly':
-      return (
-        <AssemblyCard
-          assembly={item.assembly}
-          quantity={item.quantity}
-          selected={selected}
-          onSelectedChange={onSelectedChange}
-          onEdit={onEdit}
-        />
-      )
-    case 'part':
-      return (
-        <PartCard
-          part={item.part}
-          quantity={item.quantity}
-          selected={selected}
-          onSelectedChange={onSelectedChange}
-          onEdit={onEdit}
-        />
-      )
-  }
-})
+    switch (item.kind) {
+      case 'unit':
+        return (
+          <UnitCard
+            unit={item.unit}
+            selected={selected}
+            onSelectedChange={onSelectedChange}
+            onEdit={onEdit}
+            compact={compact}
+          />
+        )
+      case 'assembly':
+        return (
+          <AssemblyCard
+            assembly={item.assembly}
+            quantity={item.quantity}
+            selected={selected}
+            onSelectedChange={onSelectedChange}
+            onEdit={onEdit}
+            compact={compact}
+          />
+        )
+      case 'part':
+        return (
+          <PartCard
+            part={item.part}
+            quantity={item.quantity}
+            selected={selected}
+            onSelectedChange={onSelectedChange}
+            onEdit={onEdit}
+            compact={compact}
+          />
+        )
+    }
+  },
+)

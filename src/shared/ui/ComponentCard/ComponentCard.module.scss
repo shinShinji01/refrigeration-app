@@ -24,13 +24,20 @@
   background: color-mix(in srgb, $color-accent-cyan 10%, color-mix(in srgb, var(--accent) 8%, $color-bg));
 }
 
+// Фон-подложка — иначе кнопки сливаются с текстом заголовка, когда он
+// переносится на вторую строку и оказывается под ними.
 .cornerActions {
   position: absolute;
   top: $space-2;
   right: $space-2;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: $space-1;
+  padding: 2px;
+  border-radius: $radius-sm;
+  background: $color-bg;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
   opacity: 1;
 }
 
@@ -51,6 +58,49 @@
 
 @include reduced-motion {
   .cornerActions {
+    transition: none;
+  }
+}
+
+// Одинаковая высота карточек-детей в сетке (не выбранной слева) — лишнее
+// обрезается с плавным фейдом, по ховеру/фокусу карточка разворачивается
+// целиком. Только от планшета и выше: на мобильном сетка в один столбец,
+// сравнивать высоту соседних карточек не с чем (docs/spec.md → "Список карточек").
+@include respond-to(tablet) {
+  .compact {
+    height: 200px;
+    overflow: hidden;
+    transition:
+      height $duration-base $easing-standard,
+      box-shadow $duration-base $easing-standard;
+  }
+
+  .compact::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 28px;
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 8%, $color-bg));
+    pointer-events: none;
+  }
+
+  .compact:hover,
+  .compact:focus-within {
+    height: auto;
+    max-height: 420px;
+    overflow-y: auto;
+    z-index: 2;
+    box-shadow: 0 8px 20px rgb(0 0 0 / 15%);
+  }
+
+  .compact:hover::after,
+  .compact:focus-within::after {
+    opacity: 0;
+  }
+}
+
+@include reduced-motion {
+  .compact {
     transition: none;
   }
 }
