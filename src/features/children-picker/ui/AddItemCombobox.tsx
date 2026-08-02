@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useContext, useState } from 'react'
 import { useCombobox } from 'downshift'
 import { useFloating, autoUpdate, offset, flip, size, FloatingPortal } from '@floating-ui/react'
 import clsx from 'clsx'
+import { ModalPortalContext } from '@/shared/ui'
 import styles from './AddItemCombobox.module.scss'
 
 interface AddItemComboboxProps<T> {
@@ -81,6 +82,12 @@ export const AddItemCombobox = <T,>({
   const setReferenceRef = useCallback((node: HTMLDivElement | null) => refs.setReference(node), [refs])
   const setFloatingRef = useCallback((node: HTMLDivElement | null) => refs.setFloating(node), [refs])
 
+  // Если снаружи есть модалка — порталимся внутрь её Dialog.Content, а не в
+  // document.body: иначе Radix Dialog считает клики по меню кликом "вне" себя
+  // и не даёт им сработать (см. shared/ui/Modal/modalPortalContext.ts).
+  const modalRoot = useContext(ModalPortalContext)
+  const portalProps = modalRoot === undefined ? {} : { root: modalRoot }
+
   return (
     <div className={styles.root}>
       <div className={styles.control} ref={setReferenceRef}>
@@ -89,7 +96,7 @@ export const AddItemCombobox = <T,>({
           ▾
         </button>
       </div>
-      <FloatingPortal>
+      <FloatingPortal {...portalProps}>
         <div
           ref={setFloatingRef}
           className={styles.menu}
