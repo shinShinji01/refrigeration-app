@@ -13,5 +13,6 @@ export interface Part extends BaseRecord {
 }
 
 // Деталь в составе конкретного узла (assembly_parts) или родительской детали
-// (part_parts) — с количеством на узел/родителя.
-export type PartWithQuantity = Part & { quantity: number }
+// (part_parts) — с количеством на узел/родителя. linkId — id самой join-записи,
+// нужен для точечного обновления количества/удаления связи (см. AssemblyWithQuantity).
+export type PartWithQuantity = Part & { quantity: number; linkId: string }

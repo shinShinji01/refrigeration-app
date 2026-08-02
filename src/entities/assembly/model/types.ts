@@ -12,4 +12,6 @@ export interface Assembly extends BaseRecord {
 }
 
 // Узел в составе конкретной установки (unit_assemblies) — с количеством на установку.
-export type AssemblyWithQuantity = Assembly & { quantity: number }
+// linkId — id самой join-записи unit_assemblies (не assembly.id), нужен, чтобы
+// точечно обновить количество или убрать связь, не трогая саму сущность узла.
+export type AssemblyWithQuantity = Assembly & { quantity: number; linkId: string }

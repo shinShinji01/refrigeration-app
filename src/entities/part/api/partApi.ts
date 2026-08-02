@@ -12,6 +12,25 @@ export type UpdatePartArgs = { id: PartId } & Partial<
   Pick<Part, 'name' | 'drawingNumbers' | 'commissionedAt' | 'isArchived'>
 >
 
+export interface AddPartToAssemblyArgs {
+  assemblyId: AssemblyId
+  partId: PartId
+  quantity: number
+}
+
+// assemblyId нужен только для инвалидации тега ASSEMBLY_${assemblyId} — сама
+// join-запись адресуется по linkId.
+export interface UpdateAssemblyPartQuantityArgs {
+  assemblyId: AssemblyId
+  linkId: string
+  quantity: number
+}
+
+export interface RemovePartFromAssemblyArgs {
+  assemblyId: AssemblyId
+  linkId: string
+}
+
 // assembly_parts: assembly (rel), part (rel), quantity — см. docs/data-model.md.
 interface AssemblyPartRecord {
   id: string
@@ -74,6 +93,7 @@ export const partApi = baseApi.injectEndpoints({
           .map((link) => ({
             ...withDrawingNumbers(link.expand!.part),
             quantity: link.quantity,
+            linkId: link.id,
           }))
           .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
       providesTags: (result, _error, assemblyId) =>
@@ -103,6 +123,7 @@ export const partApi = baseApi.injectEndpoints({
           .map((link) => ({
             ...withDrawingNumbers(link.expand!.child),
             quantity: link.quantity,
+            linkId: link.id,
           })),
       providesTags: (result, _error, partId) =>
         result
@@ -128,6 +149,32 @@ export const partApi = baseApi.injectEndpoints({
         { type: 'Part', id: 'LIST' },
       ],
     }),
+
+    // Состав узла (children-picker в модалке редактирования) — join-записи
+    // assembly_parts, отдельно от самой сущности детали.
+    addPartToAssembly: builder.mutation<null, AddPartToAssemblyArgs>({
+      query: ({ assemblyId, partId, quantity }) => ({
+        collection: 'assembly_parts',
+        method: 'create',
+        body: { assembly: assemblyId, part: partId, quantity },
+      }),
+      invalidatesTags: (_result, _error, { assemblyId }) => [{ type: 'Part', id: `ASSEMBLY_${assemblyId}` }],
+    }),
+
+    updateAssemblyPartQuantity: builder.mutation<null, UpdateAssemblyPartQuantityArgs>({
+      query: ({ linkId, quantity }) => ({
+        collection: 'assembly_parts',
+        method: 'update',
+        id: linkId,
+        body: { quantity },
+      }),
+      invalidatesTags: (_result, _error, { assemblyId }) => [{ type: 'Part', id: `ASSEMBLY_${assemblyId}` }],
+    }),
+
+    removePartFromAssembly: builder.mutation<null, RemovePartFromAssemblyArgs>({
+      query: ({ linkId }) => ({ collection: 'assembly_parts', method: 'delete', id: linkId }),
+      invalidatesTags: (_result, _error, { assemblyId }) => [{ type: 'Part', id: `ASSEMBLY_${assemblyId}` }],
+    }),
   }),
 })
 
@@ -139,4 +186,7 @@ export const {
   useLazyGetPartChildrenQuery,
   useUpdatePartMutation,
   useDeletePartMutation,
+  useAddPartToAssemblyMutation,
+  useUpdateAssemblyPartQuantityMutation,
+  useRemovePartFromAssemblyMutation,
 } = partApi

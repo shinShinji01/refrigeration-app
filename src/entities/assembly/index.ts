@@ -5,5 +5,8 @@ export {
   useLazyGetAssembliesForUnitQuery,
   useUpdateAssemblyMutation,
   useDeleteAssemblyMutation,
+  useAddAssemblyToUnitMutation,
+  useUpdateUnitAssemblyQuantityMutation,
+  useRemoveAssemblyFromUnitMutation,
 } from './api/assemblyApi'
 export { AssemblyCard } from './ui/AssemblyCard'

@@ -1,0 +1,76 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: $color-text-muted;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-2;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  color: $color-text;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  flex-shrink: 0;
+}
+
+.stepperButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  color: $color-text;
+  font-size: 1rem;
+
+  @include tap-feedback;
+
+  &:disabled {
+    color: $color-text-disabled;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.quantity {
+  min-width: 1.5em;
+  text-align: center;
+  font-size: 0.9375rem;
+
+  @include tabular-nums;
+}

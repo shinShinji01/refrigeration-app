@@ -12,6 +12,25 @@ export type UpdateAssemblyArgs = { id: AssemblyId } & Partial<
   Pick<Assembly, 'name' | 'drawingNumbers' | 'commissionedAt' | 'introducedAtUnitNo' | 'isArchived'>
 >
 
+export interface AddAssemblyToUnitArgs {
+  unitId: UnitId
+  assemblyId: AssemblyId
+  quantity: number
+}
+
+// unitId нужен только для инвалидации тега UNIT_${unitId} — сама join-запись
+// адресуется по linkId.
+export interface UpdateUnitAssemblyQuantityArgs {
+  unitId: UnitId
+  linkId: string
+  quantity: number
+}
+
+export interface RemoveAssemblyFromUnitArgs {
+  unitId: UnitId
+  linkId: string
+}
+
 // unit_assemblies: unit (rel), assembly (rel), quantity — см. docs/data-model.md.
 interface UnitAssemblyRecord {
   id: string
@@ -69,6 +88,7 @@ export const assemblyApi = baseApi.injectEndpoints({
           .map((link) => ({
             ...withDrawingNumbers(link.expand!.assembly),
             quantity: link.quantity,
+            linkId: link.id,
           }))
           .sort((a, b) => a.name.localeCompare(b.name, 'ru')),
       providesTags: (result, _error, unitId) =>
@@ -95,6 +115,32 @@ export const assemblyApi = baseApi.injectEndpoints({
         { type: 'Assembly', id: 'LIST' },
       ],
     }),
+
+    // Состав установки (children-picker в модалке редактирования) — join-записи
+    // unit_assemblies, отдельно от самой сущности узла.
+    addAssemblyToUnit: builder.mutation<null, AddAssemblyToUnitArgs>({
+      query: ({ unitId, assemblyId, quantity }) => ({
+        collection: 'unit_assemblies',
+        method: 'create',
+        body: { unit: unitId, assembly: assemblyId, quantity },
+      }),
+      invalidatesTags: (_result, _error, { unitId }) => [{ type: 'Assembly', id: `UNIT_${unitId}` }],
+    }),
+
+    updateUnitAssemblyQuantity: builder.mutation<null, UpdateUnitAssemblyQuantityArgs>({
+      query: ({ linkId, quantity }) => ({
+        collection: 'unit_assemblies',
+        method: 'update',
+        id: linkId,
+        body: { quantity },
+      }),
+      invalidatesTags: (_result, _error, { unitId }) => [{ type: 'Assembly', id: `UNIT_${unitId}` }],
+    }),
+
+    removeAssemblyFromUnit: builder.mutation<null, RemoveAssemblyFromUnitArgs>({
+      query: ({ linkId }) => ({ collection: 'unit_assemblies', method: 'delete', id: linkId }),
+      invalidatesTags: (_result, _error, { unitId }) => [{ type: 'Assembly', id: `UNIT_${unitId}` }],
+    }),
   }),
 })
 
@@ -104,4 +150,7 @@ export const {
   useLazyGetAssembliesForUnitQuery,
   useUpdateAssemblyMutation,
   useDeleteAssemblyMutation,
+  useAddAssemblyToUnitMutation,
+  useUpdateUnitAssemblyQuantityMutation,
+  useRemoveAssemblyFromUnitMutation,
 } = assemblyApi
