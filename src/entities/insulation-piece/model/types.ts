@@ -15,3 +15,12 @@ export interface InsulationPiece extends BaseRecord {
   hasAdhesive: boolean
   isArchived: boolean
 }
+
+// Кусок в составе конкретной группы (group_pieces) — с количеством и порядком
+// показа. linkId — id join-записи; в docs/data-model.md это же значение служит
+// ключом в donePieces сессии нарезки (Record<groupPieceId, true>).
+export type InsulationPieceWithQuantity = InsulationPiece & {
+  quantity: number
+  order: number
+  linkId: string
+}

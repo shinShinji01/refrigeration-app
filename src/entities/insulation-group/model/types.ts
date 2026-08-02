@@ -11,3 +11,12 @@ export interface InsulationGroup extends BaseRecord {
   introducedAtUnitNo: number | null
   isArchived: boolean
 }
+
+// Группа в составе конкретного набора (set_groups) — с количеством и порядком
+// показа. linkId — id самой join-записи (см. AssemblyWithQuantity), нужен как
+// стабильный ключ и для будущих мутаций состава набора.
+export type InsulationGroupWithQuantity = InsulationGroup & {
+  quantity: number
+  order: number
+  linkId: string
+}

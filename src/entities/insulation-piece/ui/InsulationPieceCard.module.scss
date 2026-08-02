@@ -1,0 +1,83 @@
+// Тот же язык, что у ComponentCard — приглушённая подложка + полоса слева
+// (CLAUDE.md → "Дизайн-направление"), но отдельный компонент: другая модель
+// взаимодействия (клик — отметка готовности, фаза 2), другой набор полей.
+.root {
+  display: flex;
+  gap: $space-3;
+  padding: $space-3;
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--accent) 8%, $color-bg);
+  border-left: 4px solid var(--accent);
+}
+
+.archived {
+  opacity: 0.55;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.body {
+  min-width: 0;
+  flex: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: $color-text;
+}
+
+// Номера чертежей — моноширинным (CLAUDE.md).
+.subtitle {
+  margin: $space-1 0 0;
+  font-family: $font-family-mono;
+  font-size: 0.8125rem;
+  color: $color-text-muted;
+
+  @include tabular-nums;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-1 $space-4;
+  margin: $space-2 0 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat dt {
+  font-size: 0.6875rem;
+  color: $color-text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stat dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: $color-text;
+
+  @include tabular-nums;
+}
+
+.adhesive {
+  display: inline-block;
+  margin-top: $space-2;
+  padding: 2px $space-2;
+  border-radius: $radius-sm;
+  background: color-mix(in srgb, var(--accent) 14%, $color-bg);
+  color: var(--accent);
+  font-size: 0.6875rem;
+}

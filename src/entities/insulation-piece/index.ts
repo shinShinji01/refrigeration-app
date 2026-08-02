@@ -1,1 +1,5 @@
-export type { InsulationPieceId, InsulationPiece } from './model/types'
+export type { InsulationPieceId, InsulationPiece, InsulationPieceWithQuantity } from './model/types'
+export { useGetPiecesForGroupQuery } from './api/insulationPieceApi'
+export { summarizeByThickness } from './lib/summarizeByThickness'
+export type { ThicknessSummary } from './lib/summarizeByThickness'
+export { InsulationPieceCard } from './ui/InsulationPieceCard'
