@@ -8,10 +8,9 @@ export interface GetAssembliesArgs {
   includeArchived?: boolean
 }
 
-export interface UpdateAssemblyArgs {
-  id: AssemblyId
-  isArchived: boolean
-}
+export type UpdateAssemblyArgs = { id: AssemblyId } & Partial<
+  Pick<Assembly, 'name' | 'drawingNumbers' | 'commissionedAt' | 'introducedAtUnitNo' | 'isArchived'>
+>
 
 // unit_assemblies: unit (rel), assembly (rel), quantity — см. docs/data-model.md.
 interface UnitAssemblyRecord {

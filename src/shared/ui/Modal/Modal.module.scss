@@ -1,0 +1,64 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: $z-modal-backdrop;
+  background: rgb(26 29 33 / 45%);
+  animation: overlay-in $duration-fast $easing-standard;
+}
+
+.content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: $z-modal;
+  width: calc(100% - #{$space-4 * 2});
+  max-width: 480px;
+  max-height: calc(100% - #{$space-6 * 2});
+  overflow-y: auto;
+  padding: $space-4;
+  transform: translate(-50%, -50%);
+  animation: content-in $duration-base $easing-standard;
+
+  @include card-surface;
+
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  margin-bottom: $space-3;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: $color-text;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.97);
+  }
+}
+
+@include reduced-motion {
+  .overlay,
+  .content {
+    animation: none;
+  }
+}

@@ -1,0 +1,103 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: $color-text-muted;
+}
+
+.input {
+  width: 100%;
+  height: $touch-target-min;
+  padding: 0 $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-bg;
+  color: $color-text;
+  font-size: 0.9375rem;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.error {
+  font-size: 0.8125rem;
+  color: $color-red;
+}
+
+.drawingList {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.drawingRow {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+}
+
+.removeDrawing {
+  flex-shrink: 0;
+
+  &:hover {
+    background: $color-red-muted;
+    color: $color-red;
+  }
+}
+
+.addDrawing {
+  align-self: flex-start;
+  padding: $space-2 0;
+  color: $color-accent-cyan;
+  font-size: 0.875rem;
+
+  @include touch-target;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-2;
+  margin-top: $space-2;
+}
+
+.cancel,
+.save {
+  padding: 0 $space-4;
+
+  @include touch-target;
+
+  border-radius: $radius-sm;
+  font-size: 0.9375rem;
+  font-weight: 600;
+
+  @include tap-feedback;
+}
+
+.cancel {
+  color: $color-text-muted;
+  background: transparent;
+  border: 1px solid $color-border;
+}
+
+.save {
+  color: $color-white;
+  background: $color-accent-cyan;
+  border: 1px solid $color-accent-cyan;
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
