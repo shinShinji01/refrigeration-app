@@ -3,7 +3,8 @@ export const applyToggle = (
   groupPieceId: string,
 ): Record<string, true> => {
   if (donePieces[groupPieceId]) {
-    const { [groupPieceId]: _removed, ...rest } = donePieces
+    const rest = { ...donePieces }
+    delete rest[groupPieceId]
     return rest
   }
   return { ...donePieces, [groupPieceId]: true }
