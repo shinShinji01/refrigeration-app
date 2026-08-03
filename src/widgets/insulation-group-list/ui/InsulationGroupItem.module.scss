@@ -94,3 +94,16 @@
 
   @include tabular-nums;
 }
+
+.doneBadge {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: $color-accent-cyan;
+}
+
+.visuallyHidden {
+  @include visually-hidden;
+}

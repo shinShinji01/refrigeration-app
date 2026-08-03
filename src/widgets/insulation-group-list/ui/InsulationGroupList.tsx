@@ -7,11 +7,18 @@ import styles from './InsulationGroupList.module.scss'
 interface InsulationGroupListProps {
   groups: InsulationGroupWithQuantity[]
   isLoading: boolean
+  isPieceDone: (groupPieceId: string) => boolean
+  onTogglePiece: (groupPieceId: string) => void
 }
 
 // Все группы развёрнуты по умолчанию — сворачивание индивидуальное
 // (docs/spec.md → "кнопка сворачивания группы (аккордеон)").
-export const InsulationGroupList = ({ groups, isLoading }: InsulationGroupListProps) => {
+export const InsulationGroupList = ({
+  groups,
+  isLoading,
+  isPieceDone,
+  onTogglePiece,
+}: InsulationGroupListProps) => {
   const defaultValue = groups.map((group) => group.linkId)
 
   if (isLoading) {
@@ -25,7 +32,12 @@ export const InsulationGroupList = ({ groups, isLoading }: InsulationGroupListPr
   return (
     <Accordion.Root type="multiple" defaultValue={defaultValue} className={styles.list}>
       {groups.map((group) => (
-        <InsulationGroupItem key={group.linkId} group={group} />
+        <InsulationGroupItem
+          key={group.linkId}
+          group={group}
+          isPieceDone={isPieceDone}
+          onTogglePiece={onTogglePiece}
+        />
       ))}
     </Accordion.Root>
   )

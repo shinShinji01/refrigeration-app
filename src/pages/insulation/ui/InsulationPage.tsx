@@ -1,5 +1,6 @@
 import { skipToken } from '@reduxjs/toolkit/query/react'
 import { useInsulationSetFilter, InsulationFilterBar } from '@/features/insulation-set-filter'
+import { useInsulationProgress } from '@/features/insulation-progress'
 import { useGetGroupsForSetQuery } from '@/entities/insulation-group'
 import { InsulationGroupList } from '@/widgets/insulation-group-list'
 import { EmptyState } from '@/shared/ui'
@@ -14,6 +15,7 @@ export const InsulationPage = () => {
   // получая в defaultValue чужие linkId. currentData/isFetching гарантируют,
   // что список не рендерится, пока данные не соответствуют текущей версии.
   const { currentData: groups = [], isFetching } = useGetGroupsForSetQuery(selectedSetId ?? skipToken)
+  const { isPieceDone, toggle } = useInsulationProgress({ unitId, setId: selectedSetId })
 
   return (
     <div className={styles.root}>
@@ -28,7 +30,13 @@ export const InsulationPage = () => {
         // Accordion помнит развёрнутые пункты) полностью меняется; без key
         // React переиспользовал бы тот же компонент, и всё оказывалось бы
         // свёрнутым, т.к. старые linkId не совпадают с новыми.
-        <InsulationGroupList key={selectedSetId} groups={groups} isLoading={isFetching} />
+        <InsulationGroupList
+          key={selectedSetId}
+          groups={groups}
+          isLoading={isFetching}
+          isPieceDone={isPieceDone}
+          onTogglePiece={toggle}
+        />
       )}
     </div>
   )

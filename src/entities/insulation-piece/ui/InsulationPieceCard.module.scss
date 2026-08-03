@@ -1,13 +1,37 @@
 // Тот же язык, что у ComponentCard — приглушённая подложка + полоса слева
-// (CLAUDE.md → "Дизайн-направление"), но отдельный компонент: другая модель
-// взаимодействия (клик — отметка готовности, фаза 2), другой набор полей.
+// (CLAUDE.md → "Дизайн-направление"). Клик по карточке — отметка готовности
+// (docs/superpowers/specs/2026-08-02-insulation-cutting-progress-design.md).
 .root {
+  position: relative;
   display: flex;
   gap: $space-3;
   padding: $space-3;
   border-radius: $radius-md;
   background: color-mix(in srgb, var(--accent) 8%, $color-bg);
   border-left: 4px solid var(--accent);
+  cursor: pointer;
+
+  @include tap-feedback;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+// Готовность — единственный акцент активного состояния (cyan), перекрывает
+// типовой --accent куска (CLAUDE.md → "Дизайн-направление").
+.done {
+  border-left-color: $color-accent-cyan;
+  background: color-mix(in srgb, $color-accent-cyan 10%, $color-bg);
+}
+
+.doneIcon {
+  position: absolute;
+  top: $space-2;
+  right: $space-2;
+  width: 18px;
+  height: 18px;
+  color: $color-accent-cyan;
 }
 
 .archived {
