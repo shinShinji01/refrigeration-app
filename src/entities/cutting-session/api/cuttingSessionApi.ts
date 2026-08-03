@@ -81,7 +81,29 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
         unsubscribe()
       },
     }),
+
+    updateDonePieces: builder.mutation<
+      CuttingSession,
+      { sessionId: CuttingSessionId; donePieces: Record<string, true> }
+    >({
+      query: ({ sessionId, donePieces }) => ({
+        collection: 'cutting_sessions',
+        method: 'update',
+        id: sessionId,
+        body: { donePieces },
+      }),
+      async onQueryStarted({ sessionId }, { queryFulfilled, dispatch }) {
+        try {
+          await queryFulfilled
+        } catch {
+          // Запись не прошла — сбрасываем тег, чтобы перечитать актуальное
+          // состояние с сервера, а не оставаться на разъехавшемся
+          // оптимистичном кеше (docs/superpowers/specs/... → "Обработка ошибок").
+          dispatch(baseApi.util.invalidateTags([{ type: 'CuttingSession', id: sessionId }]))
+        }
+      },
+    }),
   }),
 })
 
-export const { useGetActiveCuttingSessionQuery } = cuttingSessionApi
+export const { useGetActiveCuttingSessionQuery, useUpdateDonePiecesMutation } = cuttingSessionApi
