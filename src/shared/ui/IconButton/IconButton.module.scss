@@ -20,6 +20,10 @@
     @include focus-ring;
   }
 
+  &:disabled {
+    color: $color-text-disabled;
+  }
+
   &[aria-pressed='true'] {
     background: $color-accent-cyan-muted;
     color: $color-accent-cyan;
@@ -29,4 +33,26 @@
 .icon {
   width: 20px;
   height: 20px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentcolor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: icon-spin 700ms linear infinite;
+}
+
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@include reduced-motion {
+  .spinner {
+    animation: none;
+    opacity: 0.6;
+  }
 }
