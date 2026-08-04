@@ -9,6 +9,8 @@ interface InsulationGroupListProps {
   isLoading: boolean
   isPieceDone: (groupPieceId: string) => boolean
   onTogglePiece: (groupPieceId: string) => void
+  pendingGroupIds: ReadonlySet<string>
+  onSetGroupDone: (groupId: string, groupPieceIds: string[], done: boolean) => void
 }
 
 // Все группы развёрнуты по умолчанию — сворачивание индивидуальное
@@ -18,6 +20,8 @@ export const InsulationGroupList = ({
   isLoading,
   isPieceDone,
   onTogglePiece,
+  pendingGroupIds,
+  onSetGroupDone,
 }: InsulationGroupListProps) => {
   const defaultValue = groups.map((group) => group.linkId)
 
@@ -37,6 +41,8 @@ export const InsulationGroupList = ({
           group={group}
           isPieceDone={isPieceDone}
           onTogglePiece={onTogglePiece}
+          pendingGroupIds={pendingGroupIds}
+          onSetGroupDone={onSetGroupDone}
         />
       ))}
     </Accordion.Root>
