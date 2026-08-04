@@ -16,6 +16,7 @@ dist-ssr
 # Claude Code — личные настройки
 .claude/settings.local.json
 .playwright-mcp/
+.superpowers/
 
 # IDE
 .idea
