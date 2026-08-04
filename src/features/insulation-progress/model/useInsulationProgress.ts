@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { skipToken } from '@reduxjs/toolkit/query/react'
 import { useAppDispatch, useAppStore } from '@/app/store'
 import { useGetFirstUserQuery } from '@/entities/user'
@@ -12,6 +12,7 @@ import {
 } from '@/entities/cutting-session'
 import type { GetActiveCuttingSessionArgs } from '@/entities/cutting-session'
 import { applyToggle } from '../lib/applyToggle'
+import { applyBulk } from '../lib/applyBulk'
 
 const FLUSH_DELAY_MS = 500
 
@@ -36,6 +37,11 @@ export const useInsulationProgress = ({ unitId, setId }: UseInsulationProgressAr
   const { data: session, isLoading } = useGetActiveCuttingSessionQuery(sessionArgs)
   const [updateDonePieces] = useUpdateDonePiecesMutation()
 
+  // Группы, чья массовая отметка ушла в кеш, но ещё не подтверждена сервером
+  // (или её ошибка ещё не резинкнута). Set, а не одно значение — общий 500мс
+  // дебаунс может успеть накопить клики по нескольким группам до flush.
+  const [pendingGroupIds, setPendingGroupIds] = useState<ReadonlySet<string>>(new Set())
+
   // "Последние известные" аргументы запроса — читаются в cleanup-эффекте ниже
   // и в flush(), где обычные замыкания на момент клика уже устарели бы при
   // смене установки/версии набора.
@@ -52,10 +58,23 @@ export const useInsulationProgress = ({ unitId, setId }: UseInsulationProgressAr
       timerRef.current = null
     }
     const args = sessionArgsRef.current
-    if (args === skipToken) return
+    if (args === skipToken) {
+      setPendingGroupIds((prev) => (prev.size === 0 ? prev : new Set()))
+      return
+    }
     const current = cuttingSessionApi.endpoints.getActiveCuttingSession.select(args)(store.getState()).data
-    if (!current) return
+    if (!current) {
+      setPendingGroupIds((prev) => (prev.size === 0 ? prev : new Set()))
+      return
+    }
+    // Один запрос забирает весь накопленный прогресс (одиночные тогглы и
+    // групповые отметки вместе). pendingGroupIds чистится целиком по
+    // завершении — успех подтверждает всё, ошибку уже резинкает
+    // onQueryStarted в updateDonePieces через инвалидацию тега.
     updateDonePieces({ sessionId: current.id, donePieces: current.donePieces })
+      .unwrap()
+      .catch(() => {})
+      .finally(() => setPendingGroupIds((prev) => (prev.size === 0 ? prev : new Set())))
   }, [store, updateDonePieces])
 
   // Досылаем недописанный прогресс при смене установки/версии набора и при
@@ -80,10 +99,26 @@ export const useInsulationProgress = ({ unitId, setId }: UseInsulationProgressAr
     [dispatch, flush],
   )
 
+  const setGroupDone = useCallback(
+    (groupId: string, groupPieceIds: string[], done: boolean) => {
+      const args = sessionArgsRef.current
+      if (args === skipToken) return
+      dispatch(
+        cuttingSessionApi.util.updateQueryData('getActiveCuttingSession', args, (draft) => {
+          draft.donePieces = applyBulk(draft.donePieces, groupPieceIds, done)
+        }),
+      )
+      setPendingGroupIds((prev) => new Set(prev).add(groupId))
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(flush, FLUSH_DELAY_MS)
+    },
+    [dispatch, flush],
+  )
+
   const isPieceDone = useCallback(
     (groupPieceId: string) => Boolean(session?.donePieces[groupPieceId]),
     [session],
   )
 
-  return { isPieceDone, toggle, isLoading }
+  return { isPieceDone, toggle, setGroupDone, pendingGroupIds, isLoading }
 }

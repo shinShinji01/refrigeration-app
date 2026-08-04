@@ -4,11 +4,17 @@
   overflow: hidden;
 }
 
+.header {
+  display: flex;
+  align-items: center;
+}
+
 .trigger {
   display: flex;
   align-items: center;
   gap: $space-2;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: $space-3;
 
   @include touch-target;
@@ -47,8 +53,11 @@
 .name {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   font-size: 0.9375rem;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .count {
@@ -57,6 +66,14 @@
   font-size: 0.8125rem;
 
   @include tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: $space-1;
+  padding-right: $space-2;
 }
 
 .content {
