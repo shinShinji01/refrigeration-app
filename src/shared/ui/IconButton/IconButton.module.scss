@@ -24,6 +24,10 @@
     color: $color-text-disabled;
   }
 
+  &[aria-disabled='true'] {
+    color: $color-text-disabled;
+  }
+
   &[aria-pressed='true'] {
     background: $color-accent-cyan-muted;
     color: $color-accent-cyan;

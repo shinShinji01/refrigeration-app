@@ -52,6 +52,7 @@ export const InsulationGroupItem = ({
   }
 
   const handleMarkAll = () => {
+    if (allDone || isPending) return
     setPressedAction('markAll')
     onSetGroupDone(
       group.linkId,
@@ -61,6 +62,7 @@ export const InsulationGroupItem = ({
   }
 
   const handleUnmark = () => {
+    if (!hasAnyDone || isPending) return
     setPressedAction('unmark')
     onSetGroupDone(
       group.linkId,
@@ -86,22 +88,22 @@ export const InsulationGroupItem = ({
           <span className={styles.count}>{pieces.length}</span>
         </Accordion.Trigger>
         {pieces.length === 0 || isLoading ? null : (
-          <div className={styles.actions}>
+          <span className={styles.actions}>
             <IconButton
               icon={MarkAllIcon}
               label="Отметить всё готовым"
               loading={isPending && pressedAction === 'markAll'}
-              disabled={allDone || isPending}
+              aria-disabled={allDone || isPending}
               onClick={handleMarkAll}
             />
             <IconButton
               icon={CloseIcon}
               label="Снять готовность"
               loading={isPending && pressedAction === 'unmark'}
-              disabled={!hasAnyDone || isPending}
+              aria-disabled={!hasAnyDone || isPending}
               onClick={handleUnmark}
             />
-          </div>
+          </span>
         )}
       </Accordion.Header>
       <Accordion.Content className={styles.content}>

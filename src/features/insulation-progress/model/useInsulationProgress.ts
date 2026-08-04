@@ -59,12 +59,12 @@ export const useInsulationProgress = ({ unitId, setId }: UseInsulationProgressAr
     }
     const args = sessionArgsRef.current
     if (args === skipToken) {
-      setPendingGroupIds(new Set())
+      setPendingGroupIds((prev) => (prev.size === 0 ? prev : new Set()))
       return
     }
     const current = cuttingSessionApi.endpoints.getActiveCuttingSession.select(args)(store.getState()).data
     if (!current) {
-      setPendingGroupIds(new Set())
+      setPendingGroupIds((prev) => (prev.size === 0 ? prev : new Set()))
       return
     }
     // Один запрос забирает весь накопленный прогресс (одиночные тогглы и
@@ -74,7 +74,7 @@ export const useInsulationProgress = ({ unitId, setId }: UseInsulationProgressAr
     updateDonePieces({ sessionId: current.id, donePieces: current.donePieces })
       .unwrap()
       .catch(() => {})
-      .finally(() => setPendingGroupIds(new Set()))
+      .finally(() => setPendingGroupIds((prev) => (prev.size === 0 ? prev : new Set())))
   }, [store, updateDonePieces])
 
   // Досылаем недописанный прогресс при смене установки/версии набора и при
