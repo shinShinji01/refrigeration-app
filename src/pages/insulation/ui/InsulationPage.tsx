@@ -3,6 +3,7 @@ import { useInsulationSetFilter, InsulationFilterBar } from '@/features/insulati
 import { useInsulationProgress } from '@/features/insulation-progress'
 import { useGetGroupsForSetQuery } from '@/entities/insulation-group'
 import { InsulationGroupList } from '@/widgets/insulation-group-list'
+import { InsulationGlobalActions } from '@/widgets/insulation-global-actions'
 import { EmptyState } from '@/shared/ui'
 import styles from './InsulationPage.module.scss'
 
@@ -29,19 +30,28 @@ export const InsulationPage = () => {
       ) : !selectedSetId ? (
         <EmptyState message="У установки нет набора изоляции" />
       ) : (
-        // key — при смене версии набора список групп (и их linkId, по которым
-        // Accordion помнит развёрнутые пункты) полностью меняется; без key
-        // React переиспользовал бы тот же компонент, и всё оказывалось бы
-        // свёрнутым, т.к. старые linkId не совпадают с новыми.
-        <InsulationGroupList
-          key={selectedSetId}
-          groups={groups}
-          isLoading={isFetching}
-          isPieceDone={isPieceDone}
-          onTogglePiece={toggle}
-          pendingGroupIds={pendingGroupIds}
-          onSetGroupDone={setGroupDone}
-        />
+        <>
+          {/* key — при смене версии набора список групп (и их linkId, по которым
+              Accordion помнит развёрнутые пункты) полностью меняется; без key
+              React переиспользовал бы тот же компонент, и всё оказывалось бы
+              свёрнутым, т.к. старые linkId не совпадают с новыми. */}
+          <InsulationGroupList
+            key={selectedSetId}
+            groups={groups}
+            isLoading={isFetching}
+            isPieceDone={isPieceDone}
+            onTogglePiece={toggle}
+            pendingGroupIds={pendingGroupIds}
+            onSetGroupDone={setGroupDone}
+          />
+          <InsulationGlobalActions
+            groups={groups}
+            isLoading={isFetching}
+            isPieceDone={isPieceDone}
+            pendingGroupIds={pendingGroupIds}
+            onSetGroupDone={setGroupDone}
+          />
+        </>
       )}
     </div>
   )
