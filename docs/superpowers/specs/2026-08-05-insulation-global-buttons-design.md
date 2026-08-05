@@ -86,12 +86,18 @@ export const ALL_GROUPS_SENTINEL = '__all_groups__'
 
 Принимает `groups: InsulationGroupWithQuantity[]` и `isPieceDone: (id: string) => boolean`.
 
-- `useGetPiecesForGroupsQuery` по `groups.map(g => g.id)`.
+- `useGetPiecesForGroupsQuery` по `groups.map(g => g.id)` — через
+  `currentData`/`isFetching` (не `data`/`isLoading`), по тем же причинам,
+  что и `useGetGroupsForSetQuery` в `InsulationPage`: иначе на смене версии
+  набора `data` ненадолго отдаёт куски СТАРОЙ версии, а `isLoading` при этом
+  `false`, и клик по "отметить всё готовым" запишет старые piece id в новую
+  сессию `donePieces`.
 - `allPieceIds = pieces.map(p => p.linkId)`.
 - `allDone = isGroupDone(allPieceIds, isPieceDone)` — переиспользует уже
   существующую чистую функцию из инкремента 1, без новой логики.
 - `hasAnyDone = pieces.some(p => isPieceDone(p.linkId))`.
-- `isLoading` — из самого запроса.
+- `isLoading` — наружу возвращается под тем же именем, но источник —
+  `isFetching` от `currentData`-запроса.
 
 Возвращает `{ allPieceIds, allDone, hasAnyDone, isLoading }`.
 
@@ -102,6 +108,7 @@ export const ALL_GROUPS_SENTINEL = '__all_groups__'
 ```ts
 interface InsulationGlobalActionsProps {
   groups: InsulationGroupWithQuantity[]
+  isLoading: boolean
   isPieceDone: (groupPieceId: string) => boolean
   pendingGroupIds: ReadonlySet<string>
   onSetGroupDone: (groupId: string, groupPieceIds: string[], done: boolean) => void
@@ -121,9 +128,12 @@ interface InsulationGlobalActionsProps {
   `useBulkActions.ts`, деструктивное массовое действие с бо́льшим
   блэст-радиусом, чем у групповых кнопок), при отказе — no-op; при
   подтверждении — `onSetGroupDone(ALL_GROUPS_SENTINEL, allPieceIds, false)`.
-- Ничего не рендерит, если `groups.length === 0 || isLoading` (эквивалент
-  скрытия групповых кнопок при `pieces.length === 0 || isLoading`, но на
-  уровне всего набора).
+- Ничего не рендерит, если `isLoading || piecesLoading || allPieceIds.length === 0`
+  (проверяет и загрузку групп из пропсов, и загрузку кусков из
+  `useInsulationGlobalActions`, и то, что в наборе вообще есть куски —
+  строже, чем просто `groups.length === 0`, т.к. у набора могут быть группы
+  без кусков; эквивалент скрытия групповых кнопок при
+  `pieces.length === 0 || isLoading`, но на уровне всего набора).
 
 ### `InsulationPage`
 
