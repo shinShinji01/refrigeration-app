@@ -17,6 +17,16 @@ const withDrawingNumbers = (piece: InsulationPiece): InsulationPiece => ({
   drawingNumbers: piece.drawingNumbers ?? [],
 })
 
+const toPiecesWithQuantity = (links: GroupPieceRecord[]): InsulationPieceWithQuantity[] =>
+  links
+    .filter((link) => link.expand?.piece)
+    .map((link) => ({
+      ...withDrawingNumbers(link.expand!.piece),
+      quantity: link.quantity,
+      order: link.order,
+      linkId: link.id,
+    }))
+
 export const insulationPieceApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Куски конкретной группы, в порядке показа (docs/spec.md → "Список
@@ -31,15 +41,7 @@ export const insulationPieceApi = baseApi.injectEndpoints({
           expand: 'piece',
         },
       }),
-      transformResponse: (links: GroupPieceRecord[]): InsulationPieceWithQuantity[] =>
-        links
-          .filter((link) => link.expand?.piece)
-          .map((link) => ({
-            ...withDrawingNumbers(link.expand!.piece),
-            quantity: link.quantity,
-            order: link.order,
-            linkId: link.id,
-          })),
+      transformResponse: toPiecesWithQuantity,
       providesTags: (result, _error, groupId) =>
         result
           ? [
@@ -48,7 +50,27 @@ export const insulationPieceApi = baseApi.injectEndpoints({
             ]
           : [{ type: 'InsulationPiece' as const, id: `GROUP_${groupId}` }],
     }),
+    // Куски сразу по нескольким группам — агрегат "все ли куски набора
+    // готовы" для глобальных кнопок уровня страницы
+    // (widgets/insulation-global-actions), независимо от того, что уже
+    // закешировали отдельные InsulationGroupItem.
+    getPiecesForGroups: builder.query<InsulationPieceWithQuantity[], InsulationGroupId[]>({
+      query: (groupIds) => ({
+        collection: 'group_pieces',
+        method: 'getFullList',
+        params: {
+          filter: groupIds.map((groupId) => pb.filter('group = {:groupId}', { groupId })).join(' || '),
+          sort: 'order',
+          expand: 'piece',
+        },
+      }),
+      transformResponse: toPiecesWithQuantity,
+      providesTags: (result, _error, groupIds) => [
+        ...(result?.map(({ id }) => ({ type: 'InsulationPiece' as const, id })) ?? []),
+        ...groupIds.map((groupId) => ({ type: 'InsulationPiece' as const, id: `GROUP_${groupId}` })),
+      ],
+    }),
   }),
 })
 
-export const { useGetPiecesForGroupQuery } = insulationPieceApi
+export const { useGetPiecesForGroupQuery, useGetPiecesForGroupsQuery } = insulationPieceApi
