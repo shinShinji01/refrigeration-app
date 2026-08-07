@@ -14,6 +14,7 @@ interface DonutChartProps {
   activeId: string | null
   onSegmentActivate: (id: string | null) => void
   valueFormatter?: (value: number) => string
+  title: string
 }
 
 const SIZE = 200
@@ -26,6 +27,7 @@ export const DonutChart = ({
   activeId,
   onSegmentActivate,
   valueFormatter = String,
+  title,
 }: DonutChartProps) => {
   const titleId = useId()
   const geometry = computeDonutGeometry(segments, CIRCUMFERENCE)
@@ -36,7 +38,7 @@ export const DonutChart = ({
 
   return (
     <svg className={styles.root} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-labelledby={titleId}>
-      <title id={titleId}>Диаграмма распределения площади</title>
+      <title id={titleId}>{title}</title>
       <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
         {segments.map((segment, index) => (
           <circle
