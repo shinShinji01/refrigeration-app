@@ -339,7 +339,7 @@ git commit -m "Add computeDonutGeometry for hand-rolled SVG donut charts"
 
 **Interfaces:**
 - Consumes: `computeDonutGeometry`, `DonutGeometryInput`, `DonutSegmentGeometry` from Task 3 (`./lib/donutGeometry`); `clsx` (already a project dependency, used in `IconButton.tsx`).
-- Produces: `DonutChart` component and `DonutSegment { id: string; label: string; value: number }` type, re-exported from `@/shared/ui`. Task 8 (`InsulationStats.tsx`) imports `DonutChart, DonutSegment` from `@/shared/ui`.
+- Produces: `DonutChart` component and `DonutSegment { id: string; label: string; value: number }` type, re-exported from `@/shared/ui`. Task 7 (`InsulationStats.tsx`) imports `DonutChart, DonutSegment` from `@/shared/ui`.
 
 No RTL test infra (Global Constraints) — verified by typecheck + manual check in Task 10.
 
@@ -363,6 +363,7 @@ interface DonutChartProps {
   activeId: string | null
   onSegmentActivate: (id: string | null) => void
   valueFormatter?: (value: number) => string
+  title: string
 }
 
 const SIZE = 200
@@ -375,6 +376,7 @@ export const DonutChart = ({
   activeId,
   onSegmentActivate,
   valueFormatter = String,
+  title,
 }: DonutChartProps) => {
   const titleId = useId()
   const geometry = computeDonutGeometry(segments, CIRCUMFERENCE)
@@ -385,7 +387,7 @@ export const DonutChart = ({
 
   return (
     <svg className={styles.root} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-labelledby={titleId}>
-      <title id={titleId}>Диаграмма распределения площади</title>
+      <title id={titleId}>{title}</title>
       <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
         {segments.map((segment, index) => (
           <circle
@@ -487,7 +489,7 @@ git commit -m "Add headless DonutChart SVG primitive"
 
 **Interfaces:**
 - Consumes: `clsx`.
-- Produces: `BarChart` component and `Bar { id: string; label: string; value: number }` type, re-exported from `@/shared/ui`. Task 8 (`InsulationStats.tsx`) imports `BarChart, Bar` from `@/shared/ui`.
+- Produces: `BarChart` component and `Bar { id: string; label: string; value: number }` type, re-exported from `@/shared/ui`. Task 7 (`InsulationStats.tsx`) imports `BarChart, Bar` from `@/shared/ui`.
 
 - [ ] **Step 1: Write the component**
 
@@ -507,6 +509,7 @@ interface BarChartProps {
   activeId: string | null
   onBarActivate: (id: string | null) => void
   valueFormatter?: (value: number) => string
+  title: string
 }
 
 const HEIGHT = 160
@@ -514,7 +517,7 @@ const BAR_WIDTH = 32
 const BAR_GAP = 16
 const AXIS_TICKS = 4
 
-export const BarChart = ({ bars, activeId, onBarActivate, valueFormatter = String }: BarChartProps) => {
+export const BarChart = ({ bars, activeId, onBarActivate, valueFormatter = String, title }: BarChartProps) => {
   const maxValue = Math.max(...bars.map((bar) => bar.value), 0)
   const width = bars.length * (BAR_WIDTH + BAR_GAP) + BAR_GAP
 
@@ -528,7 +531,7 @@ export const BarChart = ({ bars, activeId, onBarActivate, valueFormatter = Strin
         className={styles.chart}
         viewBox={`0 0 ${width} ${HEIGHT}`}
         role="img"
-        aria-label="Диаграмма распределения по толщине"
+        aria-label={title}
       >
         {Array.from({ length: AXIS_TICKS + 1 }, (_, tick) => {
           const y = HEIGHT - (tick / AXIS_TICKS) * HEIGHT
@@ -781,6 +784,7 @@ export const InsulationStats = ({ groups, isLoading }: InsulationStatsProps) => 
         activeId={donutActiveId}
         onSegmentActivate={setDonutActiveId}
         valueFormatter={formatAreaM2}
+        title="Площадь изоляции по группам"
       />
       <ul className={styles.legend}>
         {byGroup.map((entry, index) => (
@@ -808,6 +812,7 @@ export const InsulationStats = ({ groups, isLoading }: InsulationStatsProps) => 
         activeId={barActiveId}
         onBarActivate={setBarActiveId}
         valueFormatter={formatAreaM2}
+        title="Площадь изоляции по толщине"
       />
     </div>
   )
