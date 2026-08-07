@@ -21,6 +21,10 @@ export const InsulationStats = ({ groups, isLoading }: InsulationStatsProps) => 
   const [donutActiveId, setDonutActiveId] = useState<string | null>(null)
   const [barActiveId, setBarActiveId] = useState<string | null>(null)
 
+  if (groups.length === 0) {
+    return null
+  }
+
   if (isLoading || statsLoading) {
     return null
   }

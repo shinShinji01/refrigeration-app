@@ -19,7 +19,13 @@ export const computeDonutGeometry = (
   circumference: number,
 ): DonutSegmentGeometry[] => {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0)
-  if (total <= 0) return []
+  if (total <= 0) {
+    return segments.map((segment) => ({
+      id: segment.id,
+      dasharray: `0 ${circumference}`,
+      dashoffset: 0,
+    }))
+  }
 
   const hasGap = segments.length > 1
   let cumulative = 0

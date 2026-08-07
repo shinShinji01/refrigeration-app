@@ -40,29 +40,34 @@ export const DonutChart = ({
     <svg className={styles.root} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-labelledby={titleId}>
       <title id={titleId}>{title}</title>
       <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
-        {segments.map((segment, index) => (
-          <circle
-            key={segment.id}
-            className={clsx(styles.segment, segment.id === activeId && styles.segmentActive)}
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
-            fill="none"
-            strokeWidth={STROKE_WIDTH}
-            strokeDasharray={geometry[index].dasharray}
-            strokeDashoffset={geometry[index].dashoffset}
-            tabIndex={0}
-            role="button"
-            aria-label={`${segment.label}: ${valueFormatter(segment.value)}`}
-            aria-pressed={segment.id === activeId}
-            onClick={() => toggle(segment.id)}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter' && event.key !== ' ') return
-              event.preventDefault()
-              toggle(segment.id)
-            }}
-          />
-        ))}
+        {segments.map((segment, index) => {
+          const arc = geometry[index]
+          if (!arc) return null
+
+          return (
+            <circle
+              key={segment.id}
+              className={clsx(styles.segment, segment.id === activeId && styles.segmentActive)}
+              cx={SIZE / 2}
+              cy={SIZE / 2}
+              r={RADIUS}
+              fill="none"
+              strokeWidth={STROKE_WIDTH}
+              strokeDasharray={arc.dasharray}
+              strokeDashoffset={arc.dashoffset}
+              tabIndex={0}
+              role="button"
+              aria-label={`${segment.label}: ${valueFormatter(segment.value)}`}
+              aria-pressed={segment.id === activeId}
+              onClick={() => toggle(segment.id)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return
+                event.preventDefault()
+                toggle(segment.id)
+              }}
+            />
+          )
+        })}
       </g>
     </svg>
   )

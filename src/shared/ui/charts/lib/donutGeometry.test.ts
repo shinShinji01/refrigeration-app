@@ -28,6 +28,8 @@ describe('computeDonutGeometry', () => {
   })
 
   it('нулевая сумма значений — пустой результат, без деления на ноль', () => {
-    expect(computeDonutGeometry([{ id: 'a', value: 0 }], 400)).toEqual([])
+    expect(computeDonutGeometry([{ id: 'a', value: 0 }], 400)).toEqual([
+      { id: 'a', dasharray: '0 400', dashoffset: 0 },
+    ])
   })
 })

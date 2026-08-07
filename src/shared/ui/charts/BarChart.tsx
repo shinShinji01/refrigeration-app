@@ -71,7 +71,7 @@ export const BarChart = ({ bars, activeId, onBarActivate, valueFormatter = Strin
       </svg>
       <div className={styles.labels} style={{ gridTemplateColumns: `repeat(${bars.length}, 1fr)` }}>
         {bars.map((bar) => (
-          <span key={bar.id} className={styles.label}>
+          <span key={bar.id}>
             {bar.label}
           </span>
         ))}

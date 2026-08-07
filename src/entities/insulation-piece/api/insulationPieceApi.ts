@@ -102,7 +102,7 @@ export const insulationPieceApi = baseApi.injectEndpoints({
               quantity: record.quantity,
             })),
           ),
-          byThickness: summarizeByThickness(toPiecesWithQuantity(records)),
+          byThickness: summarizeByThickness(toPiecesWithQuantity(withPiece)),
         }
       },
       providesTags: (_result, _error, groupIds) =>
