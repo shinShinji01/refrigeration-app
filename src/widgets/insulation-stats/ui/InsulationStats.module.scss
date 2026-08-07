@@ -1,0 +1,70 @@
+.root {
+  @include card-surface;
+
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+  padding: $space-4;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  width: 100%;
+  gap: $space-2;
+  padding: $space-2;
+
+  @include touch-target;
+  @include tap-feedback;
+
+  border: none;
+  border-radius: $radius-sm;
+  background: none;
+  color: $color-text;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: $color-accent-cyan-muted;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &[aria-current='true'] {
+    background: $color-accent-cyan-muted;
+    color: $color-accent-cyan;
+  }
+}
+
+.legendIndex {
+  color: $color-text-muted;
+  font-size: 0.75rem;
+
+  @include tabular-nums;
+}
+
+.legendName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legendValue,
+.legendPercent {
+  color: $color-text-muted;
+  font-size: 0.8125rem;
+
+  @include tabular-nums;
+}
