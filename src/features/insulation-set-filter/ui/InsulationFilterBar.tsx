@@ -46,11 +46,14 @@ export const InsulationFilterBar = () => {
 
   const selectedUnit = units.find((unit) => unit.id === unitId) ?? null
 
-  const commitDraft = () => {
+  const commitDraft = async () => {
     const parsed = Number(draft)
-    if (Number.isInteger(parsed) && parsed >= 1) {
-      commit(parsed)
-    } else {
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      setDraft(selectedUnitNo !== null ? String(selectedUnitNo) : '')
+      return
+    }
+    const result = await commit(parsed)
+    if (result !== 'committed') {
       setDraft(selectedUnitNo !== null ? String(selectedUnitNo) : '')
     }
   }

@@ -21,18 +21,20 @@ export const useUnitNoCommit = ({ unitId, setId }: UseUnitNoCommitArgs) => {
   const [fetchSession] = useLazyGetCuttingSessionByUnitNoQuery()
   const [commitError, setCommitError] = useState<string | null>(null)
 
-  const commit = async (unitNo: number) => {
-    if (!unitId || !setId || !Number.isInteger(unitNo) || unitNo < 1) return
+  const commit = async (unitNo: number): Promise<'committed' | 'dialogOpened' | 'skipped'> => {
+    if (!unitId || !setId || !Number.isInteger(unitNo) || unitNo < 1) return 'skipped'
     try {
       setCommitError(null)
       const session = await fetchSession({ unitId, setId, unitNo }).unwrap()
       if (!session || session.status === 'in_progress') {
         selectUnitNo(unitNo)
-        return
+        return 'committed'
       }
       open(REOPEN_CUTTING_SESSION_MODAL, { session, onReopened: selectUnitNo })
+      return 'dialogOpened'
     } catch {
       setCommitError('Не удалось найти сессию. Попробуйте ещё раз.')
+      return 'skipped'
     }
   }
 
