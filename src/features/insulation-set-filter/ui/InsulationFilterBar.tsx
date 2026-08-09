@@ -1,9 +1,13 @@
+import { useState } from 'react'
+import { skipToken } from '@reduxjs/toolkit/query/react'
 import { format } from 'date-fns'
 import { Combobox } from '@/shared/ui'
 import { useGetUnitsQuery } from '@/entities/refrigeration-unit'
 import type { RefrigerationUnit } from '@/entities/refrigeration-unit'
 import type { InsulationSet } from '@/entities/insulation-set'
+import { useGetInProgressCuttingSessionsQuery } from '@/entities/cutting-session'
 import { useInsulationSetFilter } from '../model/useInsulationSetFilter'
+import { useUnitNoCommit } from '../model/useUnitNoCommit'
 import styles from './InsulationFilterBar.module.scss'
 
 const getUnitLabel = (unit: RefrigerationUnit): string => unit.name
@@ -15,13 +19,41 @@ const getSetLabel = (set: InsulationSet): string => {
 }
 const getSetKey = (set: InsulationSet): string => set.id
 
-// Установка → версия набора: версия недоступна, пока не выбрана установка,
-// и авто-выбирается самой актуальной при смене установки (docs/spec.md).
+// Установка → версия набора → номер установки: версия недоступна, пока не
+// выбрана установка, номер — пока не выбраны установка и версия
+// (docs/spec.md).
 export const InsulationFilterBar = () => {
-  const { unitId, selectUnit, sets, selectedSet, selectSet } = useInsulationSetFilter()
+  const { unitId, selectUnit, sets, selectedSet, selectSet, selectedSetId, selectedUnitNo } =
+    useInsulationSetFilter()
   const { data: units = [] } = useGetUnitsQuery({ includeArchived: false })
+  const { commit } = useUnitNoCommit({ unitId, setId: selectedSetId })
+  const { data: inProgress = [] } = useGetInProgressCuttingSessionsQuery(
+    unitId && selectedSetId ? { unitId, setId: selectedSetId } : skipToken,
+  )
+
+  // Локальный draft — коммитим по Enter/blur, не на каждый символ. Синк с
+  // selectedUnitNo обрабатывает и внешние смены (чипы, реоткрытие, "Сохранить"
+  // переключает на N+1), и первичный автовыбор. setState во время рендера
+  // (а не в эффекте) — рекомендованный React-паттерн для подстройки состояния
+  // под изменившееся значение извне, без лишнего цикла рендера
+  // (react-hooks/set-state-in-effect).
+  const [draft, setDraft] = useState('')
+  const [syncedUnitNo, setSyncedUnitNo] = useState(selectedUnitNo)
+  if (selectedUnitNo !== syncedUnitNo) {
+    setSyncedUnitNo(selectedUnitNo)
+    setDraft(selectedUnitNo !== null ? String(selectedUnitNo) : '')
+  }
 
   const selectedUnit = units.find((unit) => unit.id === unitId) ?? null
+
+  const commitDraft = () => {
+    const parsed = Number(draft)
+    if (Number.isInteger(parsed) && parsed >= 1) {
+      commit(parsed)
+    } else {
+      setDraft(selectedUnitNo !== null ? String(selectedUnitNo) : '')
+    }
+  }
 
   return (
     <div className={styles.root}>
@@ -44,6 +76,42 @@ export const InsulationFilterBar = () => {
         disabled={!unitId}
         aria-label="Выбор версии набора изоляции"
       />
+      {unitId && selectedSetId ? (
+        <div className={styles.unitNo}>
+          <input
+            className={styles.unitNoInput}
+            type="number"
+            min={1}
+            step={1}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onBlur={commitDraft}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                commitDraft()
+              }
+            }}
+            placeholder="№ установки"
+            aria-label="Номер установки"
+          />
+          {inProgress.length > 0 ? (
+            <div className={styles.chips} role="group" aria-label="Установки в работе">
+              {inProgress.map((session) => (
+                <button
+                  key={session.id}
+                  type="button"
+                  className={styles.chip}
+                  aria-pressed={session.unitNo === selectedUnitNo}
+                  onClick={() => commit(session.unitNo)}
+                >
+                  {session.unitNo}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }
