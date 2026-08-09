@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b --noEmit",
     "lint": "eslint . && stylelint \"src/**/*.scss\" --allow-empty-input",
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm lint && pnpm test",

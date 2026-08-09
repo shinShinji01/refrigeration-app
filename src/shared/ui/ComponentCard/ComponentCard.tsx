@@ -40,7 +40,7 @@ export const ComponentCard = ({
   onEdit,
   compact,
 }: ComponentCardProps) => {
-  const style = { '--accent': accentColor } satisfies CSSProperties
+  const style: CSSProperties & { '--accent': string } = { '--accent': accentColor }
 
   const card = (
     <article

@@ -32,5 +32,6 @@ export const componentEditSchema = z.object({
   children: z.array(childField),
 })
 
-export type ComponentEditFormValues = z.infer<typeof componentEditSchema>
+export type ComponentEditFormValues = z.output<typeof componentEditSchema>
+export type ComponentEditFormInput = z.input<typeof componentEditSchema>
 export type ChildFormValue = z.infer<typeof childField>

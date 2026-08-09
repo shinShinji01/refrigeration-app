@@ -9,4 +9,4 @@ export const EDIT_COMPONENT_MODAL = 'editComponent'
 // Реестр типизирован под общий ModalProps — конкретная форма пропсов каждой
 // модалки известна только по соглашению (какое имя → какие props передаются
 // в open()), TS этого не проверяет.
-MODAL_REGISTRY[EDIT_COMPONENT_MODAL] = ComponentEditModal as ComponentType<ModalProps>
+MODAL_REGISTRY[EDIT_COMPONENT_MODAL] = ComponentEditModal as unknown as ComponentType<ModalProps>

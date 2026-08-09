@@ -20,7 +20,7 @@ export const SortButton = () => {
 
   useOnClickOutside(rootRef, () => setIsOpen(false), isOpen)
 
-  const current = OPTIONS.find((option) => option.value === sortBy) ?? OPTIONS[0]
+  const current = OPTIONS.find((option) => option.value === sortBy) ?? OPTIONS[0]!
 
   return (
     <div className={styles.root} ref={rootRef}>

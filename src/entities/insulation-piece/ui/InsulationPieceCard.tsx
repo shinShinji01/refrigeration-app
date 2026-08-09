@@ -22,7 +22,7 @@ const formatDimensions = (piece: InsulationPieceWithQuantity): string =>
   piece.geometry.kind === 'rect' ? `${piece.geometry.width} × ${piece.geometry.height} мм` : 'Многоугольник'
 
 export const InsulationPieceCard = ({ piece, isDone, onToggle }: InsulationPieceCardProps) => {
-  const style = { '--accent': ACCENT } satisfies CSSProperties
+  const style: CSSProperties & { '--accent': string } = { '--accent': ACCENT }
   const subtitle = piece.drawingNumbers.length > 0 ? piece.drawingNumbers.join(', ') : piece.id
   const title = piece.quantity > 1 ? `${piece.name} × ${piece.quantity}` : piece.name
 

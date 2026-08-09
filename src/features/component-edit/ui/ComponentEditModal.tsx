@@ -26,7 +26,12 @@ import {
   useUpdateAssemblyPartQuantityMutation,
   useRemovePartFromAssemblyMutation,
 } from '@/entities/part'
-import { componentEditSchema, type ComponentEditFormValues, type ChildFormValue } from '../model/schema'
+import {
+  componentEditSchema,
+  type ComponentEditFormValues,
+  type ComponentEditFormInput,
+  type ChildFormValue,
+} from '../model/schema'
 import styles from './ComponentEditModal.module.scss'
 
 interface ComponentEditModalProps {
@@ -102,7 +107,7 @@ export const ComponentEditModal = ({ item }: ComponentEditModalProps) => {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<ComponentEditFormValues>({
+  } = useForm<ComponentEditFormInput, unknown, ComponentEditFormValues>({
     resolver: zodResolver(componentEditSchema),
     defaultValues: initialValues,
   })
@@ -140,6 +145,7 @@ export const ComponentEditModal = ({ item }: ComponentEditModalProps) => {
     const index = childFields.findIndex((field) => field.fieldId === key)
     if (index === -1) return
     const current = childFields[index]
+    if (!current) return
     updateChild(index, { linkId: current.linkId, id: current.id, name: current.name, quantity })
   }
 
