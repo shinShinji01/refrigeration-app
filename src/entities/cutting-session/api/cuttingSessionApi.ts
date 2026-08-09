@@ -130,6 +130,26 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
       ],
     }),
 
+    // Реоткрытие уже завершённой сессии — та же запись, новая не создаётся.
+    // resetDonePieces=true — «начать заново» (чистый лист), false — «редактировать»
+    // (прогресс остаётся как был на момент завершения).
+    reopenCuttingSession: builder.mutation<
+      CuttingSession,
+      { sessionId: CuttingSessionId; unitId: UnitId; setId: InsulationSetId; resetDonePieces: boolean }
+    >({
+      query: ({ sessionId, resetDonePieces }) => ({
+        collection: 'cutting_sessions',
+        method: 'update',
+        id: sessionId,
+        body: { status: 'in_progress', ...(resetDonePieces ? { donePieces: {} } : {}) },
+      }),
+      transformResponse: normalizeCuttingSession,
+      invalidatesTags: (_result, _error, { sessionId, unitId, setId }) => [
+        { type: 'CuttingSession', id: sessionId },
+        { type: 'CuttingSession', id: `LIST_${unitId}_${setId}` },
+      ],
+    }),
+
     updateDonePieces: builder.mutation<
       CuttingSession,
       { sessionId: CuttingSessionId; donePieces: Record<string, true> }
@@ -160,4 +180,5 @@ export const {
   useGetCuttingSessionByUnitNoQuery,
   useLazyGetCuttingSessionByUnitNoQuery,
   useGetInProgressCuttingSessionsQuery,
+  useReopenCuttingSessionMutation,
 } = cuttingSessionApi

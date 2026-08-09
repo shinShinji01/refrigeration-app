@@ -6,5 +6,6 @@ export {
   useGetCuttingSessionByUnitNoQuery,
   useLazyGetCuttingSessionByUnitNoQuery,
   useGetInProgressCuttingSessionsQuery,
+  useReopenCuttingSessionMutation,
 } from './api/cuttingSessionApi'
 export type { GetActiveCuttingSessionArgs, CuttingSessionLookupArgs, CuttingSessionListArgs } from './api/cuttingSessionApi'
