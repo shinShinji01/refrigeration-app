@@ -3,6 +3,7 @@ import { useInsulationSetFilter, InsulationFilterBar } from '@/features/insulati
 import { useInsulationProgress } from '@/features/insulation-progress'
 import { useGetGroupsForSetQuery } from '@/entities/insulation-group'
 import { InsulationGroupList } from '@/widgets/insulation-group-list'
+import { InsulationStats } from '@/widgets/insulation-stats'
 import { InsulationGlobalActions } from '@/widgets/insulation-global-actions'
 import { EmptyState } from '@/shared/ui'
 import styles from './InsulationPage.module.scss'
@@ -44,6 +45,7 @@ export const InsulationPage = () => {
             pendingGroupIds={pendingGroupIds}
             onSetGroupDone={setGroupDone}
           />
+          <InsulationStats key={selectedSetId} groups={groups} isLoading={isFetching} />
           <InsulationGlobalActions
             groups={groups}
             isLoading={isFetching}

@@ -1,0 +1,26 @@
+.root {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+.segment {
+  stroke: $color-graphite-300;
+  cursor: pointer;
+  transition: stroke $duration-fast $easing-standard;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.segmentActive {
+  stroke: $color-accent-cyan;
+}
+
+@include reduced-motion {
+  .segment {
+    transition: none;
+  }
+}
