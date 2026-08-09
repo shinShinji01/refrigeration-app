@@ -26,7 +26,7 @@ export const InsulationFilterBar = () => {
   const { unitId, selectUnit, sets, selectedSet, selectSet, selectedSetId, selectedUnitNo } =
     useInsulationSetFilter()
   const { data: units = [] } = useGetUnitsQuery({ includeArchived: false })
-  const { commit } = useUnitNoCommit({ unitId, setId: selectedSetId })
+  const { commit, commitError } = useUnitNoCommit({ unitId, setId: selectedSetId })
   const { data: inProgress = [] } = useGetInProgressCuttingSessionsQuery(
     unitId && selectedSetId ? { unitId, setId: selectedSetId } : skipToken,
   )
@@ -37,7 +37,7 @@ export const InsulationFilterBar = () => {
   // (а не в эффекте) — рекомендованный React-паттерн для подстройки состояния
   // под изменившееся значение извне, без лишнего цикла рендера
   // (react-hooks/set-state-in-effect).
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState(selectedUnitNo !== null ? String(selectedUnitNo) : '')
   const [syncedUnitNo, setSyncedUnitNo] = useState(selectedUnitNo)
   if (selectedUnitNo !== syncedUnitNo) {
     setSyncedUnitNo(selectedUnitNo)
@@ -110,6 +110,7 @@ export const InsulationFilterBar = () => {
               ))}
             </div>
           ) : null}
+          {commitError ? <p className={styles.error}>{commitError}</p> : null}
         </div>
       ) : null}
     </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useModal } from '@/app/providers'
 import type { UnitId } from '@/entities/refrigeration-unit'
 import type { InsulationSetId } from '@/entities/insulation-set'
@@ -18,16 +19,22 @@ export const useUnitNoCommit = ({ unitId, setId }: UseUnitNoCommitArgs) => {
   const { open } = useModal()
   const { selectUnitNo } = useInsulationSetFilter()
   const [fetchSession] = useLazyGetCuttingSessionByUnitNoQuery()
+  const [commitError, setCommitError] = useState<string | null>(null)
 
   const commit = async (unitNo: number) => {
     if (!unitId || !setId || !Number.isInteger(unitNo) || unitNo < 1) return
-    const session = await fetchSession({ unitId, setId, unitNo }).unwrap()
-    if (!session || session.status === 'in_progress') {
-      selectUnitNo(unitNo)
-      return
+    try {
+      setCommitError(null)
+      const session = await fetchSession({ unitId, setId, unitNo }).unwrap()
+      if (!session || session.status === 'in_progress') {
+        selectUnitNo(unitNo)
+        return
+      }
+      open(REOPEN_CUTTING_SESSION_MODAL, { session, onReopened: selectUnitNo })
+    } catch {
+      setCommitError('Не удалось найти сессию. Попробуйте ещё раз.')
     }
-    open(REOPEN_CUTTING_SESSION_MODAL, { session, onReopened: selectUnitNo })
   }
 
-  return { commit }
+  return { commit, commitError }
 }
