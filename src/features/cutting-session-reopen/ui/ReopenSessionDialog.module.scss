@@ -1,0 +1,45 @@
+.description {
+  color: $color-text-muted;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  margin-top: $space-3;
+}
+
+.restart,
+.edit,
+.cancel {
+  padding: 0 $space-4;
+
+  @include touch-target;
+
+  border-radius: $radius-sm;
+  font-size: 0.9375rem;
+  font-weight: 600;
+
+  @include tap-feedback;
+}
+
+.restart,
+.edit {
+  color: $color-text;
+  background: $color-bg;
+  border: 1px solid $color-border;
+}
+
+.cancel {
+  color: $color-text-muted;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.error {
+  margin-top: $space-2;
+  color: $color-red;
+  font-size: 0.875rem;
+}
