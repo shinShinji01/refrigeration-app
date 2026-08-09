@@ -3,7 +3,7 @@ import { baseApi } from '@/shared/api'
 import { cascadeFilterReducer } from '@/features/cascade-filter'
 import { cardSelectionReducer } from '@/features/card-selection'
 import { cardSortReducer } from '@/features/card-sort'
-import { insulationFilterReducer } from '@/features/insulation-set-filter'
+import { insulationFilterReducer } from '@/features/insulation-set-filter/model/insulationFilterSlice'
 
 export const store = configureStore({
   reducer: {
