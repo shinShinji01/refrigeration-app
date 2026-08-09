@@ -1,0 +1,31 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  align-items: flex-start;
+}
+
+.save {
+  padding: 0 $space-4;
+
+  @include touch-target;
+
+  color: $color-white;
+  background: $color-accent-cyan;
+  border: 1px solid $color-accent-cyan;
+  border-radius: $radius-sm;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+
+  @include tap-feedback;
+
+  &[aria-disabled='true'] {
+    opacity: 0.6;
+  }
+}
+
+.error {
+  color: $color-red;
+  font-size: 0.875rem;
+}
