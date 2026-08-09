@@ -1,5 +1,5 @@
 import { baseApi, pb } from '@/shared/api'
-import type { UnitId } from '@/entities/refrigeration-unit'
+import type { UnitId, RefrigerationUnit } from '@/entities/refrigeration-unit'
 import type { InsulationSetId } from '@/entities/insulation-set'
 import type { UserId } from '@/entities/user'
 import type { CuttingSession, CuttingSessionId } from '../model/types'
@@ -150,6 +150,74 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
       ],
     }),
 
+    // Финализация: status -> completed + units.lastCompletedUnitNoInsulation
+    // подтягивается до max(текущее, unitNo). Блокируется, если по ЭТОЙ установке
+    // (по всем версиям набора, не только текущей — счётчик общий для установки)
+    // есть более ранний in_progress номер: нельзя завершить #48 раньше #47.
+    completeCuttingSession: builder.mutation<
+      { unit: RefrigerationUnit },
+      { sessionId: CuttingSessionId; unitId: UnitId; setId: InsulationSetId; unitNo: number }
+    >({
+      queryFn: async ({ sessionId, unitId, unitNo }, _queryApi, _extraOptions, baseQuery) => {
+        const blockingFilter = pb.filter('unit = {:unitId} && status = "in_progress" && unitNo < {:unitNo}', {
+          unitId,
+          unitNo,
+        })
+        const blocking = await baseQuery({
+          collection: 'cutting_sessions',
+          method: 'getFullList',
+          params: { filter: blockingFilter, sort: 'unitNo' },
+        })
+        if (blocking.error) return { error: blocking.error }
+
+        const earliest = (blocking.data as CuttingSession[])[0]
+        if (earliest) {
+          return {
+            error: {
+              status: 409,
+              message: `Установка №${earliest.unitNo} ещё не завершена по изоляции. Сначала завершите её.`,
+              data: { blockingUnitNo: earliest.unitNo },
+            },
+          }
+        }
+
+        const sessionUpdate = await baseQuery({
+          collection: 'cutting_sessions',
+          method: 'update',
+          id: sessionId,
+          body: { status: 'completed' },
+        })
+        if (sessionUpdate.error) return { error: sessionUpdate.error }
+
+        const unitResult = await baseQuery({ collection: 'units', method: 'getOne', id: unitId })
+        if (unitResult.error) return { error: unitResult.error }
+        const current = (unitResult.data as RefrigerationUnit).lastCompletedUnitNoInsulation ?? 0
+
+        const updatedUnit = await baseQuery({
+          collection: 'units',
+          method: 'update',
+          id: unitId,
+          body: { lastCompletedUnitNoInsulation: Math.max(current, unitNo) },
+        })
+        if (updatedUnit.error) return { error: updatedUnit.error }
+
+        return { data: { unit: updatedUnit.data as RefrigerationUnit } }
+      },
+      // ВАЖНО: не инвалидируем { type: 'CuttingSession', id: sessionId } здесь.
+      // getActiveCuttingSession для (unitId, setId, старый unitNo) — get-or-create
+      // по status="in_progress"; если бы мы форсировали его рефетч тегом, он бы
+      // не нашёл только что завершённую запись (status уже completed) и молча
+      // СОЗДАЛ БЫ новую пустую сессию под тем же номером. Компоненты, ещё
+      // подписанные на старый unitNo, узнают о завершении через уже работающую
+      // realtime-подписку onCacheEntryAdded (патчит кеш напрямую, без рефетча
+      // queryFn) — этого достаточно, а наш собственный save() сразу переключает
+      // unitNo на N+1, так что старая подписка снимается почти сразу.
+      invalidatesTags: (_result, _error, { unitId, setId }) => [
+        { type: 'CuttingSession', id: `LIST_${unitId}_${setId}` },
+        { type: 'Unit', id: unitId },
+      ],
+    }),
+
     updateDonePieces: builder.mutation<
       CuttingSession,
       { sessionId: CuttingSessionId; donePieces: Record<string, true> }
@@ -181,4 +249,5 @@ export const {
   useLazyGetCuttingSessionByUnitNoQuery,
   useGetInProgressCuttingSessionsQuery,
   useReopenCuttingSessionMutation,
+  useCompleteCuttingSessionMutation,
 } = cuttingSessionApi
