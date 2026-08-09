@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -16,7 +17,6 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        api: 'modern-compiler',
         loadPaths: [srcDir],
         additionalData: `
           @use 'app/styles/functions' as *;

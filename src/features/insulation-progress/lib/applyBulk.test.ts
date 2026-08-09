@@ -32,7 +32,7 @@ describe('applyBulk', () => {
   })
 
   it('всегда возвращает новый объект', () => {
-    const original = { 'gp-1': true }
+    const original = { 'gp-1': true } as const
     expect(applyBulk(original, ['gp-1'], true)).not.toBe(original)
     expect(applyBulk(original, ['gp-1'], false)).not.toBe(original)
   })
