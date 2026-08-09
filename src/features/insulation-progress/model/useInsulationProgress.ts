@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { skipToken } from '@reduxjs/toolkit/query/react'
 import { useAppDispatch, useAppStore } from '@/app/store'
 import { useGetFirstUserQuery } from '@/entities/user'
-import { useGetUnitsQuery } from '@/entities/refrigeration-unit'
 import type { UnitId } from '@/entities/refrigeration-unit'
 import type { InsulationSetId } from '@/entities/insulation-set'
 import {
@@ -19,17 +18,16 @@ const FLUSH_DELAY_MS = 500
 interface UseInsulationProgressArgs {
   unitId: UnitId | null
   setId: InsulationSetId | null
+  // Приходит из useInsulationSetFilter().selectedUnitNo — вычисление номера
+  // (автовыбор lastCompletedUnitNoInsulation + 1 или явный выбор пользователя)
+  // больше не задача этого хука.
+  unitNo: number | null
 }
 
-export const useInsulationProgress = ({ unitId, setId }: UseInsulationProgressArgs) => {
+export const useInsulationProgress = ({ unitId, setId, unitNo }: UseInsulationProgressArgs) => {
   const dispatch = useAppDispatch()
   const store = useAppStore()
   const { data: user } = useGetFirstUserQuery()
-  // Тот же кеш, что уже прогрет InsulationFilterBar — лишнего запроса нет.
-  const { data: units = [] } = useGetUnitsQuery({ includeArchived: false })
-
-  const unit = units.find((candidate) => candidate.id === unitId) ?? null
-  const unitNo = unit ? (unit.lastCompletedUnitNoInsulation ?? 0) + 1 : null
 
   const sessionArgs: GetActiveCuttingSessionArgs | typeof skipToken =
     unitId && setId && unitNo !== null && user ? { unitId, setId, unitNo, userId: user.id } : skipToken

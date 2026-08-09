@@ -9,7 +9,7 @@ import { EmptyState } from '@/shared/ui'
 import styles from './InsulationPage.module.scss'
 
 export const InsulationPage = () => {
-  const { unitId, selectedSetId } = useInsulationSetFilter()
+  const { unitId, selectedSetId, selectedUnitNo } = useInsulationSetFilter()
   // currentData (не data) и isFetching (не isLoading) — иначе на смене версии
   // набора один рендер отдаёт группы СТАРОЙ версии при уже новом selectedSetId
   // (RTK Query отдаёт data от предыдущего arg, пока грузится новый), и именно
@@ -20,6 +20,7 @@ export const InsulationPage = () => {
   const { isPieceDone, toggle, setGroupDone, pendingGroupIds } = useInsulationProgress({
     unitId,
     setId: selectedSetId,
+    unitNo: selectedUnitNo,
   })
 
   return (
