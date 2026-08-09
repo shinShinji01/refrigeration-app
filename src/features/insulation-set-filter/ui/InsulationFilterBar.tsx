@@ -52,6 +52,9 @@ export const InsulationFilterBar = () => {
       setDraft(selectedUnitNo !== null ? String(selectedUnitNo) : '')
       return
     }
+    if (parsed === selectedUnitNo) {
+      return
+    }
     const result = await commit(parsed)
     if (result !== 'committed') {
       setDraft(selectedUnitNo !== null ? String(selectedUnitNo) : '')

@@ -36,7 +36,7 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
     // многошаговая логика с обработкой гонки создания между устройствами
     // (см. docs/superpowers/specs/2026-08-02-insulation-cutting-progress-design.md).
     getActiveCuttingSession: builder.query<CuttingSession, GetActiveCuttingSessionArgs>({
-      queryFn: async ({ unitId, setId, unitNo, userId }, _queryApi, _extraOptions, baseQuery) => {
+      queryFn: async ({ unitId, setId, unitNo, userId }, queryApi, _extraOptions, baseQuery) => {
         const filter = pb.filter(
           'unit = {:unitId} && set = {:setId} && unitNo = {:unitNo} && status = "in_progress"',
           { unitId, setId, unitNo },
@@ -50,12 +50,23 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
           return { error: found.error }
         }
 
+        // Дошли сюда только если исходной in_progress сессии не было (404) —
+        // значит ниже мы либо создаём новую, либо находим её через
+        // race-retry; в обоих случаях список чипов (LIST_-тег) устарел и его
+        // нужно инвалидировать, иначе новая сессия не появится как чип, пока
+        // не случится что-то ещё, что триггернёт рефетч.
+        const invalidateList = () =>
+          queryApi.dispatch(
+            baseApi.util.invalidateTags([{ type: 'CuttingSession', id: `LIST_${unitId}_${setId}` }]),
+          )
+
         const created = await baseQuery({
           collection: 'cutting_sessions',
           method: 'create',
           body: { unit: unitId, set: setId, unitNo, donePieces: {}, status: 'in_progress', user: userId },
         })
         if (created.data) {
+          invalidateList()
           return { data: normalizeCuttingSession(created.data as CuttingSession) }
         }
 
@@ -64,6 +75,7 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
         // нашли — гонка разрешена, не нашли — возвращаем исходную ошибку создания.
         const retry = await baseQuery({ collection: 'cutting_sessions', method: 'getFirstListItem', filter })
         if (retry.data) {
+          invalidateList()
           return { data: normalizeCuttingSession(retry.data as CuttingSession) }
         }
         return {
@@ -189,8 +201,26 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
         })
         if (sessionUpdate.error) return { error: sessionUpdate.error }
 
+        // Ниже сессия уже помечена completed. Если что-то из шагов по unit
+        // упадёт, откатываем статус сессии обратно в in_progress — иначе
+        // get-or-create в getActiveCuttingSession не найдёт in_progress-запись
+        // для этой же тройки (unit, set, unitNo) и молча создаст ВТОРУЮ,
+        // пустую сессию-дубликат. Откат — best-effort: исходная ошибка (по
+        // unit) всегда возвращается вызывающему, даже если сам откат не удался.
+        const rollbackSession = async () => {
+          await baseQuery({
+            collection: 'cutting_sessions',
+            method: 'update',
+            id: sessionId,
+            body: { status: 'in_progress' },
+          })
+        }
+
         const unitResult = await baseQuery({ collection: 'units', method: 'getOne', id: unitId })
-        if (unitResult.error) return { error: unitResult.error }
+        if (unitResult.error) {
+          await rollbackSession()
+          return { error: unitResult.error }
+        }
         const current = (unitResult.data as RefrigerationUnit).lastCompletedUnitNoInsulation ?? 0
 
         const updatedUnit = await baseQuery({
@@ -199,7 +229,10 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
           id: unitId,
           body: { lastCompletedUnitNoInsulation: Math.max(current, unitNo) },
         })
-        if (updatedUnit.error) return { error: updatedUnit.error }
+        if (updatedUnit.error) {
+          await rollbackSession()
+          return { error: updatedUnit.error }
+        }
 
         return { data: { unit: updatedUnit.data as RefrigerationUnit } }
       },
