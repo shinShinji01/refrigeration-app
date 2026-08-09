@@ -11,6 +11,17 @@ export interface GetActiveCuttingSessionArgs {
   userId: UserId
 }
 
+export interface CuttingSessionLookupArgs {
+  unitId: UnitId
+  setId: InsulationSetId
+  unitNo: number
+}
+
+export interface CuttingSessionListArgs {
+  unitId: UnitId
+  setId: InsulationSetId
+}
+
 // PocketBase хранит незаполненный json как null, а не {} — приводим на
 // границе, как unitApi приводит drawingNumbers к [].
 const normalizeCuttingSession = (session: CuttingSession): CuttingSession => ({
@@ -82,6 +93,43 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
       },
     }),
 
+    // Чистая проверка существования (любой статус, включая completed) — в отличие
+    // от getActiveCuttingSession, без побочного эффекта create-если-не-найдено.
+    // Единственная точка, которой важен статус completed (детект "уже завершена"
+    // при повторном ручном вводе номера — docs/superpowers/specs/2026-08-09-...).
+    getCuttingSessionByUnitNo: builder.query<CuttingSession | null, CuttingSessionLookupArgs>({
+      queryFn: async ({ unitId, setId, unitNo }, _queryApi, _extraOptions, baseQuery) => {
+        const filter = pb.filter('unit = {:unitId} && set = {:setId} && unitNo = {:unitNo}', {
+          unitId,
+          setId,
+          unitNo,
+        })
+        const found = await baseQuery({ collection: 'cutting_sessions', method: 'getFirstListItem', filter })
+        if (found.data) return { data: normalizeCuttingSession(found.data as CuttingSession) }
+        if (found.error && found.error.status !== 404) return { error: found.error }
+        return { data: null }
+      },
+      providesTags: (result) => (result ? [{ type: 'CuttingSession', id: result.id }] : []),
+    }),
+
+    // Номера "в работе" для пары установка+версия — питает чипы рядом с инпутом
+    // unitNo (InsulationFilterBar).
+    getInProgressCuttingSessions: builder.query<CuttingSession[], CuttingSessionListArgs>({
+      query: ({ unitId, setId }) => ({
+        collection: 'cutting_sessions',
+        method: 'getFullList',
+        params: {
+          filter: pb.filter('unit = {:unitId} && set = {:setId} && status = "in_progress"', { unitId, setId }),
+          sort: 'unitNo',
+        },
+      }),
+      transformResponse: (sessions: CuttingSession[]): CuttingSession[] => sessions.map(normalizeCuttingSession),
+      providesTags: (result, _error, { unitId, setId }) => [
+        ...(result?.map(({ id }) => ({ type: 'CuttingSession' as const, id })) ?? []),
+        { type: 'CuttingSession' as const, id: `LIST_${unitId}_${setId}` },
+      ],
+    }),
+
     updateDonePieces: builder.mutation<
       CuttingSession,
       { sessionId: CuttingSessionId; donePieces: Record<string, true> }
@@ -106,4 +154,10 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
   }),
 })
 
-export const { useGetActiveCuttingSessionQuery, useUpdateDonePiecesMutation } = cuttingSessionApi
+export const {
+  useGetActiveCuttingSessionQuery,
+  useUpdateDonePiecesMutation,
+  useGetCuttingSessionByUnitNoQuery,
+  useLazyGetCuttingSessionByUnitNoQuery,
+  useGetInProgressCuttingSessionsQuery,
+} = cuttingSessionApi
