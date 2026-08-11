@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart, DonutChart, EmptyState } from '@/shared/ui'
+import { DonutChart, EmptyState } from '@/shared/ui'
 import type { InsulationGroupWithQuantity } from '@/entities/insulation-group'
 import { useInsulationStats } from '../model/useInsulationStats'
 import styles from './InsulationStats.module.scss'
@@ -19,7 +19,6 @@ const formatAreaM2 = (value: number) => `${value.toFixed(3)} м²`
 export const InsulationStats = ({ groups, isLoading }: InsulationStatsProps) => {
   const { byGroup, byThickness, totalAreaM2, isLoading: statsLoading } = useInsulationStats(groups)
   const [donutActiveId, setDonutActiveId] = useState<string | null>(null)
-  const [barActiveId, setBarActiveId] = useState<string | null>(null)
 
   if (groups.length === 0) {
     return null
@@ -35,13 +34,15 @@ export const InsulationStats = ({ groups, isLoading }: InsulationStatsProps) => 
 
   return (
     <div className={styles.root}>
-      <DonutChart
-        segments={byGroup.map((entry) => ({ id: entry.id, label: entry.label, value: entry.areaM2 }))}
-        activeId={donutActiveId}
-        onSegmentActivate={setDonutActiveId}
-        valueFormatter={formatAreaM2}
-        title="Площадь изоляции по группам"
-      />
+      <div className={styles.chart}>
+        <DonutChart
+          segments={byGroup.map((entry) => ({ id: entry.id, label: entry.label, value: entry.areaM2 }))}
+          activeId={donutActiveId}
+          onSegmentActivate={setDonutActiveId}
+          valueFormatter={formatAreaM2}
+          title="Площадь изоляции по группам"
+        />
+      </div>
       <ul className={styles.legend}>
         {byGroup.map((entry, index) => (
           <li key={entry.id}>
@@ -59,17 +60,13 @@ export const InsulationStats = ({ groups, isLoading }: InsulationStatsProps) => 
           </li>
         ))}
       </ul>
-      <BarChart
-        bars={byThickness.map((entry) => ({
-          id: String(entry.thicknessMm),
-          label: `${entry.thicknessMm} мм`,
-          value: entry.areaM2,
-        }))}
-        activeId={barActiveId}
-        onBarActivate={setBarActiveId}
-        valueFormatter={formatAreaM2}
-        title="Площадь изоляции по толщине"
-      />
+      <ul className={styles.thicknessList}>
+        {byThickness.map((entry) => (
+          <li key={entry.thicknessMm} className={styles.thicknessItem}>
+            {entry.thicknessMm} мм — {formatAreaM2(entry.areaM2)}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

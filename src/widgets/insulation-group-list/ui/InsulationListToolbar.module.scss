@@ -1,0 +1,52 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-3;
+}
+
+.tabs {
+  display: flex;
+  gap: $space-1;
+}
+
+.tab {
+  padding: 0 $space-3;
+  min-height: 36px;
+  color: $color-text-muted;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  @include tap-feedback;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &[data-state='active'] {
+    color: $color-accent-cyan;
+    background: $color-accent-cyan-muted;
+    border-color: $color-accent-cyan;
+  }
+}
+
+.collapseToggle {
+  padding: 0 $space-3;
+
+  @include touch-target;
+  @include tap-feedback;
+
+  color: $color-text;
+  background: $color-bg;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}

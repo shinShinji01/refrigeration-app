@@ -47,7 +47,6 @@ export const InsulationPage = () => {
             pendingGroupIds={pendingGroupIds}
             onSetGroupDone={setGroupDone}
           />
-          <InsulationStats key={selectedSetId} groups={groups} isLoading={isFetching} />
           <InsulationGlobalActions
             groups={groups}
             isLoading={isFetching}
@@ -56,6 +55,7 @@ export const InsulationPage = () => {
             onSetGroupDone={setGroupDone}
           />
           <InsulationSaveSession />
+          <InsulationStats key={selectedSetId} groups={groups} isLoading={isFetching} />
         </>
       )}
     </div>

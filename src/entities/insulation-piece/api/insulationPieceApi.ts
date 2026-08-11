@@ -29,6 +29,7 @@ const toPiecesWithQuantity = (links: GroupPieceRecord[]): InsulationPieceWithQua
       quantity: link.quantity,
       order: link.order,
       linkId: link.id,
+      groupId: link.group as InsulationGroupId,
     }))
 
 export interface InsulationSetStats {
