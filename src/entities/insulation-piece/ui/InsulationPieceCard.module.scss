@@ -105,3 +105,12 @@
   color: var(--accent);
   font-size: 0.6875rem;
 }
+
+.groupLabel {
+  display: block;
+  margin-bottom: 2px;
+  color: $color-text-muted;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
