@@ -5,6 +5,21 @@
   flex-direction: column;
   gap: $space-4;
   padding: $space-4;
+
+  @include respond-to(tablet) {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'chart legend'
+      'thickness thickness';
+    align-items: start;
+  }
+}
+
+.chart {
+  @include respond-to(tablet) {
+    grid-area: chart;
+  }
 }
 
 .legend {
@@ -14,6 +29,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
+
+  @include respond-to(tablet) {
+    grid-area: legend;
+  }
 }
 
 .legendRow {
@@ -67,4 +86,26 @@
   font-size: 0.8125rem;
 
   @include tabular-nums;
+}
+
+.thicknessList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-1 $space-4;
+  margin: 0;
+  padding-top: $space-3;
+  border-top: 1px solid $color-border;
+  list-style: none;
+  color: $color-text-muted;
+  font-size: 0.8125rem;
+
+  @include tabular-nums;
+
+  @include respond-to(tablet) {
+    grid-area: thickness;
+  }
+}
+
+.thicknessItem {
+  white-space: nowrap;
 }
