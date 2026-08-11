@@ -1,5 +1,6 @@
 import type { BaseRecord } from '@/shared/api'
 import type { Geometry } from '@/shared/lib/geometry'
+import type { InsulationGroupId } from '@/entities/insulation-group'
 
 export type InsulationPieceId = string & { readonly __brand: 'InsulationPieceId' }
 
@@ -18,9 +19,13 @@ export interface InsulationPiece extends BaseRecord {
 
 // Кусок в составе конкретной группы (group_pieces) — с количеством и порядком
 // показа. linkId — id join-записи; в docs/data-model.md это же значение служит
-// ключом в donePieces сессии нарезки (Record<groupPieceId, true>).
+// ключом в donePieces сессии нарезки (Record<groupPieceId, true>). groupId —
+// та же join-запись, но нужен для сквозного вида "по толщине"
+// (widgets/insulation-group-list/ui/InsulationThicknessList), где кусок
+// показывается вне своей группы и нужна ненавязчивая метка, откуда он.
 export type InsulationPieceWithQuantity = InsulationPiece & {
   quantity: number
   order: number
   linkId: string
+  groupId: InsulationGroupId
 }
