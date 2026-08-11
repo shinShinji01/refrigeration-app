@@ -15,6 +15,7 @@ type PressedAction = 'markAll' | 'unmark' | null
 
 interface InsulationGroupItemProps {
   group: InsulationGroupWithQuantity
+  detailed: boolean
   isPieceDone: (groupPieceId: string) => boolean
   onTogglePiece: (groupPieceId: string) => void
   pendingGroupIds: ReadonlySet<string>
@@ -23,6 +24,7 @@ interface InsulationGroupItemProps {
 
 export const InsulationGroupItem = ({
   group,
+  detailed,
   isPieceDone,
   onTogglePiece,
   pendingGroupIds,
@@ -117,6 +119,7 @@ export const InsulationGroupItem = ({
                 piece={piece}
                 isDone={isPieceDone(piece.linkId)}
                 onToggle={() => onTogglePiece(piece.linkId)}
+                detailed={detailed}
               />
             ))}
           </div>
