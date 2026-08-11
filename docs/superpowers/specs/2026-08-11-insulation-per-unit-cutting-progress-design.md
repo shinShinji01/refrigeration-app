@@ -53,6 +53,15 @@
 запись самовосстанавливается числом при первом же взаимодействии с этим
 куском.
 
+Тип `donePieces` объявлен и используется не только в
+`features/insulation-progress` — расширение затрагивает:
+- `entities/cutting-session/model/types.ts`: `CuttingSession.donePieces:
+  Record<string, true>` → `Record<string, number | true>`.
+- `entities/cutting-session/api/cuttingSessionApi.ts`: аргумент
+  `useUpdateDonePiecesMutation` (`{ sessionId: CuttingSessionId; donePieces:
+  Record<string, true> }`) — та же замена типа. Тело запроса/эндпоинт не
+  меняются, это чистое расширение типа значения в уже существующем JSON-поле.
+
 Новая чистая функция `features/insulation-progress/lib/resolveDoneCount.ts`:
 
 ```ts
@@ -123,6 +132,13 @@ export const isGroupFullyDone = (
   `setGroupDone(groupId, pieces: { linkId: string; quantity: number }[], done: boolean)`
   (пишет через обновлённый `applyBulk`).
 
+`features/insulation-progress/index.ts` (публичный баррel фичи) — экспорт
+`applyToggle` заменяется на `applySetCount`, `isGroupDone` — на
+`isGroupFullyDone`, `applyBulk` остаётся под тем же именем с новой сигнатурой.
+`resolveDoneCount` наружу не экспортируется — используется только внутри
+`useInsulationProgress`, тест на неё импортирует файл напрямую (тот же
+паттерн, что уже у `groupByThickness.test.ts`).
+
 ### `entities/insulation-piece/ui/InsulationPieceCard`
 
 Пропсы: `isDone: boolean` + `onToggle: () => void` заменяются на
@@ -150,6 +166,13 @@ const isPartial = doneCount > 0 && !isFull
   onChangeCount(Math.max(0, doneCount - 1))} aria-disabled={doneCount ===
   0} />`, соседний элемент, а не вложенный. Оба остаются в пределах Enter/Space
   доступности через нативную семантику `<button>`.
+
+  В проекте пока нет иконки «минус» (`src/shared/assets/icons` содержит
+  `close`, `check`, `mark-all` и т.д., но не `minus`) — план должен первым
+  шагом добавить `src/shared/assets/icons/minus.svg` в том же стиле, что
+  остальные (`viewBox="0 0 24 24"`, `stroke="currentColor"`, `stroke-width="2"
+  stroke-linecap="round"`, см. `close.svg`): одна горизонтальная линия
+  `M6 12h12`.
 - Бейдж `«{doneCount} / {piece.quantity}»` (`tabular-nums`) рядом с
   заголовком — только при `quantity > 1`. При `quantity <= 1` заголовок
   остаётся как сейчас (`piece.name`, без суффикса количества — единственный
@@ -165,26 +188,54 @@ const isPartial = doneCount > 0 && !isFull
   карточки), `@include tap-feedback`, `:focus-visible { @include focus-ring;
   }`.
 
-### Места использования (`widgets/insulation-group-list`, `pages/insulation`)
+### Места использования
 
-- `InsulationGroupItem.tsx`: `allDone` считается через `isGroupFullyDone(pieces,
-  getPieceDoneCount)`; `hasAnyDone` — `pieces.some((p) =>
-  getPieceDoneCount(p.linkId, p.quantity) > 0)`. `handleMarkAll`/`handleUnmark`
-  передают в `onSetGroupDone` `pieces.map((p) => ({ linkId: p.linkId, quantity:
-  p.quantity }))` вместо плоского списка id. Карточка получает `doneCount=
-  {getPieceDoneCount(piece.linkId, piece.quantity)}` и
-  `onChangeCount={(next) => onSetPieceCount(piece.linkId, next)}`.
-- `InsulationThicknessList.tsx`: та же схема пропсов (`getPieceDoneCount`/
-  `onSetPieceCount` вместо `isPieceDone`/`onTogglePiece`), без изменений в
-  логике группировки по толщине.
+Переименование `isPieceDone`/`onTogglePiece` → `getPieceDoneCount`/
+`onSetPieceCount` и переход бывшего плоского `groupPieceIds: string[]` к
+`{ linkId: string; quantity: number }[]` в `onSetGroupDone` каскадом проходит
+по всем местам, где сейчас используется старый булев API — таких мест два
+виджета, не один:
+
+- `widgets/insulation-group-list/ui/InsulationGroupItem.tsx`: `allDone`
+  считается через `isGroupFullyDone(pieces, getPieceDoneCount)`; `hasAnyDone`
+  — `pieces.some((p) => getPieceDoneCount(p.linkId, p.quantity) > 0)`.
+  `handleMarkAll`/`handleUnmark` передают в `onSetGroupDone` `pieces.map((p) =>
+  ({ linkId: p.linkId, quantity: p.quantity }))` вместо плоского списка id.
+  Карточка получает `doneCount={getPieceDoneCount(piece.linkId,
+  piece.quantity)}` и `onChangeCount={(next) => onSetPieceCount(piece.linkId,
+  next)}`.
+- `widgets/insulation-group-list/ui/InsulationThicknessList.tsx`: та же схема
+  пропсов, без изменений в логике группировки по толщине.
+- `widgets/insulation-group-list/ui/InsulationGroupList.tsx`: чистый
+  прокидыватель пропсов вниз к обоим табам (`InsulationGroupItem`/
+  `InsulationThicknessList`) — переименования пропсов каскадом, структурных
+  изменений нет.
+- `widgets/insulation-global-actions/model/useInsulationGlobalActions.ts` и
+  `.../ui/InsulationGlobalActions.tsx` — кнопки «Отметить всё готовым» /
+  «Снять готовность» **для всего набора** (не группы), сейчас отдельно
+  вызывают `isGroupDone(allPieceIds, isPieceDone)` и передают в
+  `onSetGroupDone(ALL_GROUPS_SENTINEL, allPieceIds, done)` плоский
+  `allPieceIds: string[]`. Требуют той же замены: `isGroupFullyDone`,
+  `getPieceDoneCount`, и `allPieceIds` → `allPieces: { linkId; quantity }[]`
+  (уже вычислимо из имеющегося там `pieces` — `useGetPiecesForGroupsQuery`).
+  Легко упустить при реализации, т.к. это отдельный виджет уровня страницы,
+  а не потомок `InsulationGroupList`.
 - `pages/insulation/ui/InsulationPage.tsx`: прокидывает переименованные
   `getPieceDoneCount`/`setPieceCount`/`setGroupDone` из
-  `useInsulationProgress` вниз без структурных изменений компоновки.
+  `useInsulationProgress` вниз в оба виджета (`InsulationGroupList` и
+  `InsulationGlobalActions`) без структурных изменений компоновки.
 - `InsulationListToolbar`, `useInsulationGroupList`, `groupByThickness`,
   `InsulationStats`, `summarizeByThickness`, `summarizeByGroup` — **не
   меняются**. Они уже считают площадь через `piece.quantity` (сколько всего
   материала в наборе), а не через готовность — частичный прогресс нарезки на
   эти расчёты не влияет.
+
+Побочная находка при аудите затрагиваемых мест: в `entities/session/model/
+types.ts` есть второе, независимое определение `CuttingSession`/`DonePieces`
+(`Record<string, true>`), которое нигде в кодовой базе не импортируется —
+живой тип живёт в `entities/cutting-session`. Это существующий мёртвый код,
+не связанный с этим изменением; в объём этого дизайна не входит, трогать не
+будем (см. `CLAUDE.md` — не делать несвязанный рефакторинг попутно).
 
 ## Граничные случаи
 
