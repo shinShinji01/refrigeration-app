@@ -37,9 +37,14 @@ export const InsulationPage = () => {
           {/* key — при смене версии набора список групп (и их linkId, по которым
               Accordion помнит развёрнутые пункты) полностью меняется; без key
               React переиспользовал бы тот же компонент, и всё оказывалось бы
-              свёрнутым, т.к. старые linkId не совпадают с новыми. */}
+              свёрнутым, т.к. старые linkId не совпадают с новыми. Префикс —
+              чтобы не совпадать с key у InsulationStats ниже: у соседних
+              элементов одного Fragment ключи должны быть уникальны НЕЗАВИСИМО
+              от типа компонента, иначе React путает fiber при смене
+              selectedSetId и старые узлы остаются в DOM рядом с новыми
+              (баг: список задваивается вместо замены при смене установки/версии). */}
           <InsulationGroupList
-            key={selectedSetId}
+            key={`groups-${selectedSetId}`}
             groups={groups}
             isLoading={isFetching}
             isPieceDone={isPieceDone}
@@ -55,7 +60,7 @@ export const InsulationPage = () => {
             onSetGroupDone={setGroupDone}
           />
           <InsulationSaveSession />
-          <InsulationStats key={selectedSetId} groups={groups} isLoading={isFetching} />
+          <InsulationStats key={`stats-${selectedSetId}`} groups={groups} isLoading={isFetching} />
         </>
       )}
     </div>
