@@ -106,7 +106,7 @@ RefrigerationUnit
 | `unit` | rel → units | |
 | `set` | rel → insulation_sets | какая версия резалась |
 | `unitNo` | number | номер установки, которую режем |
-| `donePieces` | json | `Record<groupPieceId, true>` — плоский объект, а не массив |
+| `donePieces` | json | `Record<groupPieceId, number | true>` — число кусков нарезано, `true` = legacy "полностью готово"; плоский объект, а не массив |
 | `status` | select: `in_progress` \| `completed` | |
 | `user` | rel → users | |
 | `updated` | autodate | |

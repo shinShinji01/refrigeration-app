@@ -19,7 +19,8 @@ export interface InsulationPiece extends BaseRecord {
 
 // Кусок в составе конкретной группы (group_pieces) — с количеством и порядком
 // показа. linkId — id join-записи; в docs/data-model.md это же значение служит
-// ключом в donePieces сессии нарезки (Record<groupPieceId, true>). groupId —
+// ключом в donePieces сессии нарезки (Record<groupPieceId, number | true> —
+// число нарезано или true для legacy полной нарезки). groupId —
 // та же join-запись, но нужен для сквозного вида "по толщине"
 // (widgets/insulation-group-list/ui/InsulationThicknessList), где кусок
 // показывается вне своей группы и нужна ненавязчивая метка, откуда он.
