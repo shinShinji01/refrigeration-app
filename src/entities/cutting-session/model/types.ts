@@ -15,7 +15,7 @@ export interface CuttingSession extends BaseRecord {
   unit: UnitId
   set: InsulationSetId
   unitNo: number
-  donePieces: Record<string, true>
+  donePieces: Record<string, number | true>
   status: CuttingSessionStatus
   user: UserId
 }

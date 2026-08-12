@@ -253,7 +253,7 @@ export const cuttingSessionApi = baseApi.injectEndpoints({
 
     updateDonePieces: builder.mutation<
       CuttingSession,
-      { sessionId: CuttingSessionId; donePieces: Record<string, true> }
+      { sessionId: CuttingSessionId; donePieces: Record<string, number | true> }
     >({
       query: ({ sessionId, donePieces }) => ({
         collection: 'cutting_sessions',

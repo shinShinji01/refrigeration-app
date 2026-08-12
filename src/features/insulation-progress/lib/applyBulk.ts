@@ -1,8 +1,8 @@
 export const applyBulk = (
-  donePieces: Record<string, true>,
+  donePieces: Record<string, number | true>,
   groupPieceIds: string[],
   done: boolean,
-): Record<string, true> => {
+): Record<string, number | true> => {
   const next = { ...donePieces }
   for (const id of groupPieceIds) {
     if (done) {
