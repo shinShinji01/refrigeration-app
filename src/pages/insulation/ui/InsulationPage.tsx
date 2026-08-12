@@ -18,7 +18,7 @@ export const InsulationPage = () => {
   // получая в defaultValue чужие linkId. currentData/isFetching гарантируют,
   // что список не рендерится, пока данные не соответствуют текущей версии.
   const { currentData: groups = [], isFetching } = useGetGroupsForSetQuery(selectedSetId ?? skipToken)
-  const { isPieceDone, toggle, setGroupDone, pendingGroupIds } = useInsulationProgress({
+  const { getPieceDoneCount, setPieceCount, setGroupDone, pendingGroupIds } = useInsulationProgress({
     unitId,
     setId: selectedSetId,
     unitNo: selectedUnitNo,
@@ -47,15 +47,15 @@ export const InsulationPage = () => {
             key={`groups-${selectedSetId}`}
             groups={groups}
             isLoading={isFetching}
-            isPieceDone={isPieceDone}
-            onTogglePiece={toggle}
+            getPieceDoneCount={getPieceDoneCount}
+            onSetPieceCount={setPieceCount}
             pendingGroupIds={pendingGroupIds}
             onSetGroupDone={setGroupDone}
           />
           <InsulationGlobalActions
             groups={groups}
             isLoading={isFetching}
-            isPieceDone={isPieceDone}
+            getPieceDoneCount={getPieceDoneCount}
             pendingGroupIds={pendingGroupIds}
             onSetGroupDone={setGroupDone}
           />

@@ -7,8 +7,8 @@ import styles from './InsulationThicknessList.module.scss'
 interface InsulationThicknessListProps {
   groups: InsulationGroupWithQuantity[]
   detailed: boolean
-  isPieceDone: (groupPieceId: string) => boolean
-  onTogglePiece: (groupPieceId: string) => void
+  getPieceDoneCount: (groupPieceId: string, quantity: number) => number
+  onSetPieceCount: (groupPieceId: string, count: number) => void
 }
 
 // Сквозной (вне групп) вид кусков изоляции набора, сгруппированных по
@@ -19,8 +19,8 @@ interface InsulationThicknessListProps {
 export const InsulationThicknessList = ({
   groups,
   detailed,
-  isPieceDone,
-  onTogglePiece,
+  getPieceDoneCount,
+  onSetPieceCount,
 }: InsulationThicknessListProps) => {
   const groupIds = groups.map((group) => group.id)
   // currentData/isFetching — тот же паттерн защиты от гонки версий набора,
@@ -51,8 +51,8 @@ export const InsulationThicknessList = ({
               <InsulationPieceCard
                 key={piece.linkId}
                 piece={piece}
-                isDone={isPieceDone(piece.linkId)}
-                onToggle={() => onTogglePiece(piece.linkId)}
+                doneCount={getPieceDoneCount(piece.linkId, piece.quantity)}
+                onChangeCount={(next) => onSetPieceCount(piece.linkId, next)}
                 detailed={detailed}
                 groupLabel={groupNameById.get(piece.groupId)}
               />

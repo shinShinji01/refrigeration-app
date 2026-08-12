@@ -1,5 +1,5 @@
 export { useInsulationProgress } from './model/useInsulationProgress'
-export { applyToggle } from './lib/applyToggle'
-export { isGroupDone } from './lib/isGroupDone'
+export { applySetCount } from './lib/applySetCount'
+export { isGroupFullyDone } from './lib/isGroupFullyDone'
 export { applyBulk } from './lib/applyBulk'
 export { ALL_GROUPS_SENTINEL } from './lib/allGroupsSentinel'

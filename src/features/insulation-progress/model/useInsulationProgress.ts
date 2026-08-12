@@ -10,8 +10,9 @@ import {
   useUpdateDonePiecesMutation,
 } from '@/entities/cutting-session'
 import type { GetActiveCuttingSessionArgs } from '@/entities/cutting-session'
-import { applyToggle } from '../lib/applyToggle'
+import { applySetCount } from '../lib/applySetCount'
 import { applyBulk } from '../lib/applyBulk'
+import { resolveDoneCount } from '../lib/resolveDoneCount'
 
 const FLUSH_DELAY_MS = 500
 
@@ -81,14 +82,14 @@ export const useInsulationProgress = ({ unitId, setId, unitNo }: UseInsulationPr
     return () => flush()
   }, [unitId, setId, unitNo, user?.id, flush])
 
-  const toggle = useCallback(
-    (groupPieceId: string) => {
+  const setPieceCount = useCallback(
+    (groupPieceId: string, count: number) => {
       const args = sessionArgsRef.current
       if (args === skipToken) return
       // Отметка "щёлкает" мгновенно — патчим кеш RTK Query, не дожидаясь сети.
       dispatch(
         cuttingSessionApi.util.updateQueryData('getActiveCuttingSession', args, (draft) => {
-          draft.donePieces = applyToggle(draft.donePieces, groupPieceId)
+          draft.donePieces = applySetCount(draft.donePieces, groupPieceId, count)
         }),
       )
       if (timerRef.current) clearTimeout(timerRef.current)
@@ -98,12 +99,12 @@ export const useInsulationProgress = ({ unitId, setId, unitNo }: UseInsulationPr
   )
 
   const setGroupDone = useCallback(
-    (groupId: string, groupPieceIds: string[], done: boolean) => {
+    (groupId: string, pieces: { linkId: string; quantity: number }[], done: boolean) => {
       const args = sessionArgsRef.current
       if (args === skipToken) return
       dispatch(
         cuttingSessionApi.util.updateQueryData('getActiveCuttingSession', args, (draft) => {
-          draft.donePieces = applyBulk(draft.donePieces, groupPieceIds, done)
+          draft.donePieces = applyBulk(draft.donePieces, pieces, done)
         }),
       )
       setPendingGroupIds((prev) => new Set(prev).add(groupId))
@@ -113,10 +114,10 @@ export const useInsulationProgress = ({ unitId, setId, unitNo }: UseInsulationPr
     [dispatch, flush],
   )
 
-  const isPieceDone = useCallback(
-    (groupPieceId: string) => Boolean(session?.donePieces[groupPieceId]),
+  const getPieceDoneCount = useCallback(
+    (groupPieceId: string, quantity: number) => resolveDoneCount(session?.donePieces[groupPieceId], quantity),
     [session],
   )
 
-  return { isPieceDone, toggle, setGroupDone, pendingGroupIds, isLoading }
+  return { getPieceDoneCount, setPieceCount, setGroupDone, pendingGroupIds, isLoading }
 }

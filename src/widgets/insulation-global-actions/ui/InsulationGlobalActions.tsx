@@ -12,21 +12,21 @@ type PressedAction = 'markAll' | 'unmark' | null
 interface InsulationGlobalActionsProps {
   groups: InsulationGroupWithQuantity[]
   isLoading: boolean
-  isPieceDone: (groupPieceId: string) => boolean
+  getPieceDoneCount: (groupPieceId: string, quantity: number) => number
   pendingGroupIds: ReadonlySet<string>
-  onSetGroupDone: (groupId: string, groupPieceIds: string[], done: boolean) => void
+  onSetGroupDone: (groupId: string, pieces: { linkId: string; quantity: number }[], done: boolean) => void
 }
 
 export const InsulationGlobalActions = ({
   groups,
   isLoading,
-  isPieceDone,
+  getPieceDoneCount,
   pendingGroupIds,
   onSetGroupDone,
 }: InsulationGlobalActionsProps) => {
-  const { allPieceIds, allDone, hasAnyDone, isLoading: piecesLoading } = useInsulationGlobalActions(
+  const { allPieces, allDone, hasAnyDone, isLoading: piecesLoading } = useInsulationGlobalActions(
     groups,
-    isPieceDone,
+    getPieceDoneCount,
   )
   const isPending = pendingGroupIds.has(ALL_GROUPS_SENTINEL)
 
@@ -39,21 +39,21 @@ export const InsulationGlobalActions = ({
     if (!isPending) setPressedAction(null)
   }
 
-  if (isLoading || piecesLoading || allPieceIds.length === 0) {
+  if (isLoading || piecesLoading || allPieces.length === 0) {
     return null
   }
 
   const handleMarkAll = () => {
     if (allDone || isPending) return
     setPressedAction('markAll')
-    onSetGroupDone(ALL_GROUPS_SENTINEL, allPieceIds, true)
+    onSetGroupDone(ALL_GROUPS_SENTINEL, allPieces, true)
   }
 
   const handleUnmark = () => {
     if (!hasAnyDone || isPending) return
     if (!window.confirm('Снять готовность со всех кусков набора?')) return
     setPressedAction('unmark')
-    onSetGroupDone(ALL_GROUPS_SENTINEL, allPieceIds, false)
+    onSetGroupDone(ALL_GROUPS_SENTINEL, allPieces, false)
   }
 
   return (

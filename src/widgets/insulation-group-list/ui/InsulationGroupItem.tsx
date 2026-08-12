@@ -8,7 +8,7 @@ import { IconButton } from '@/shared/ui'
 import { useGetPiecesForGroupQuery } from '@/entities/insulation-piece'
 import { InsulationPieceCard, summarizeByThickness } from '@/entities/insulation-piece'
 import type { InsulationGroupWithQuantity } from '@/entities/insulation-group'
-import { isGroupDone } from '@/features/insulation-progress'
+import { isGroupFullyDone } from '@/features/insulation-progress'
 import styles from './InsulationGroupItem.module.scss'
 
 type PressedAction = 'markAll' | 'unmark' | null
@@ -16,17 +16,17 @@ type PressedAction = 'markAll' | 'unmark' | null
 interface InsulationGroupItemProps {
   group: InsulationGroupWithQuantity
   detailed: boolean
-  isPieceDone: (groupPieceId: string) => boolean
-  onTogglePiece: (groupPieceId: string) => void
+  getPieceDoneCount: (groupPieceId: string, quantity: number) => number
+  onSetPieceCount: (groupPieceId: string, count: number) => void
   pendingGroupIds: ReadonlySet<string>
-  onSetGroupDone: (groupId: string, groupPieceIds: string[], done: boolean) => void
+  onSetGroupDone: (groupId: string, pieces: { linkId: string; quantity: number }[], done: boolean) => void
 }
 
 export const InsulationGroupItem = ({
   group,
   detailed,
-  isPieceDone,
-  onTogglePiece,
+  getPieceDoneCount,
+  onSetPieceCount,
   pendingGroupIds,
   onSetGroupDone,
 }: InsulationGroupItemProps) => {
@@ -34,11 +34,8 @@ export const InsulationGroupItem = ({
   const thicknessSummary = summarizeByThickness(pieces)
   // Чистое производное от индивидуальных отметок — отдельной логики "готова
   // ли группа" на сервере нет (docs/spec.md).
-  const allDone = isGroupDone(
-    pieces.map((piece) => piece.linkId),
-    isPieceDone,
-  )
-  const hasAnyDone = pieces.some((piece) => isPieceDone(piece.linkId))
+  const allDone = isGroupFullyDone(pieces, getPieceDoneCount)
+  const hasAnyDone = pieces.some((piece) => getPieceDoneCount(piece.linkId, piece.quantity) > 0)
   const isPending = pendingGroupIds.has(group.linkId)
 
   // Какая из двух кнопок нажата последней — чтобы спиннер показывался
@@ -56,21 +53,13 @@ export const InsulationGroupItem = ({
   const handleMarkAll = () => {
     if (allDone || isPending) return
     setPressedAction('markAll')
-    onSetGroupDone(
-      group.linkId,
-      pieces.map((piece) => piece.linkId),
-      true,
-    )
+    onSetGroupDone(group.linkId, pieces, true)
   }
 
   const handleUnmark = () => {
     if (!hasAnyDone || isPending) return
     setPressedAction('unmark')
-    onSetGroupDone(
-      group.linkId,
-      pieces.map((piece) => piece.linkId),
-      false,
-    )
+    onSetGroupDone(group.linkId, pieces, false)
   }
 
   return (
@@ -117,8 +106,8 @@ export const InsulationGroupItem = ({
               <InsulationPieceCard
                 key={piece.linkId}
                 piece={piece}
-                isDone={isPieceDone(piece.linkId)}
-                onToggle={() => onTogglePiece(piece.linkId)}
+                doneCount={getPieceDoneCount(piece.linkId, piece.quantity)}
+                onChangeCount={(next) => onSetPieceCount(piece.linkId, next)}
                 detailed={detailed}
               />
             ))}

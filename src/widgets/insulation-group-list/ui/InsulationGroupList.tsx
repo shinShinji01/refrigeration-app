@@ -12,10 +12,10 @@ import styles from './InsulationGroupList.module.scss'
 interface InsulationGroupListProps {
   groups: InsulationGroupWithQuantity[]
   isLoading: boolean
-  isPieceDone: (groupPieceId: string) => boolean
-  onTogglePiece: (groupPieceId: string) => void
+  getPieceDoneCount: (groupPieceId: string, quantity: number) => number
+  onSetPieceCount: (groupPieceId: string, count: number) => void
   pendingGroupIds: ReadonlySet<string>
-  onSetGroupDone: (groupId: string, groupPieceIds: string[], done: boolean) => void
+  onSetGroupDone: (groupId: string, pieces: { linkId: string; quantity: number }[], done: boolean) => void
 }
 
 const isInsulationListView = (value: string): value is InsulationListView =>
@@ -29,8 +29,8 @@ const isInsulationListView = (value: string): value is InsulationListView =>
 export const InsulationGroupList = ({
   groups,
   isLoading,
-  isPieceDone,
-  onTogglePiece,
+  getPieceDoneCount,
+  onSetPieceCount,
   pendingGroupIds,
   onSetGroupDone,
 }: InsulationGroupListProps) => {
@@ -80,8 +80,8 @@ export const InsulationGroupList = ({
               key={group.linkId}
               group={group}
               detailed={detailed}
-              isPieceDone={isPieceDone}
-              onTogglePiece={onTogglePiece}
+              getPieceDoneCount={getPieceDoneCount}
+              onSetPieceCount={onSetPieceCount}
               pendingGroupIds={pendingGroupIds}
               onSetGroupDone={onSetGroupDone}
             />
@@ -92,8 +92,8 @@ export const InsulationGroupList = ({
         <InsulationThicknessList
           groups={groups}
           detailed={detailed}
-          isPieceDone={isPieceDone}
-          onTogglePiece={onTogglePiece}
+          getPieceDoneCount={getPieceDoneCount}
+          onSetPieceCount={onSetPieceCount}
         />
       </Tabs.Content>
     </Tabs.Root>
