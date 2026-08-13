@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { useCombobox } from 'downshift'
 import { useFloating, autoUpdate, offset, flip, size, FloatingPortal } from '@floating-ui/react'
 import clsx from 'clsx'
+import { FloatingLabelField } from '../FloatingLabelField'
 import styles from './Combobox.module.scss'
 
 interface ComboboxProps<T> {
@@ -11,7 +12,7 @@ interface ComboboxProps<T> {
   onChange: (item: T | null) => void
   getItemLabel: (item: T) => string
   getItemKey: (item: T) => string
-  placeholder?: string
+  label: string
   disabled?: boolean
   'aria-label'?: string
 }
@@ -26,7 +27,7 @@ export const Combobox = <T,>({
   onChange,
   getItemLabel,
   getItemKey,
-  placeholder,
+  label,
   disabled,
   'aria-label': ariaLabel,
 }: ComboboxProps<T>) => {
@@ -68,6 +69,9 @@ export const Combobox = <T,>({
       },
     })
 
+  const generatedId = useId()
+  const resolvedId = id ?? generatedId
+
   // Меню всегда смонтировано (скрывается через display:none на обёртке, не
   // условным рендером) — так и должно быть по докам downshift, но сам ref
   // указывает на элемент внутри @floating-ui/react-портала, и внутренняя
@@ -77,10 +81,10 @@ export const Combobox = <T,>({
   const setFloatingRef = useCallback((node: HTMLDivElement | null) => refs.setFloating(node), [refs])
 
   return (
-    <div className={styles.root}>
+    <FloatingLabelField htmlFor={resolvedId} label={label} className={styles.root}>
       <div className={styles.control} ref={setReferenceRef}>
         <input
-          {...getInputProps({ id, disabled, placeholder, 'aria-label': ariaLabel })}
+          {...getInputProps({ id: resolvedId, disabled, placeholder: ' ', 'aria-label': ariaLabel })}
           className={styles.input}
         />
         {value ? (
@@ -123,6 +127,6 @@ export const Combobox = <T,>({
           </ul>
         </div>
       </FloatingPortal>
-    </div>
+    </FloatingLabelField>
   )
 }

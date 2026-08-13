@@ -41,7 +41,7 @@ export const CascadeFilter = ({ includeArchived }: CascadeFilterProps) => {
         onChange={(unit) => selectUnit(unit?.id ?? null)}
         getItemLabel={getName}
         getItemKey={getId}
-        placeholder="Установка"
+        label="Установка"
         aria-label="Выбор холодильной установки"
       />
       <Combobox<Assembly>
@@ -50,7 +50,7 @@ export const CascadeFilter = ({ includeArchived }: CascadeFilterProps) => {
         onChange={(assembly) => selectAssembly(assembly?.id ?? null)}
         getItemLabel={getName}
         getItemKey={getId}
-        placeholder="Узел"
+        label="Узел"
         disabled={!unitId}
         aria-label="Выбор сборочного узла"
       />
@@ -60,7 +60,7 @@ export const CascadeFilter = ({ includeArchived }: CascadeFilterProps) => {
         onChange={(part) => selectPart(part?.id ?? null)}
         getItemLabel={getName}
         getItemKey={getId}
-        placeholder="Деталь"
+        label="Деталь"
         disabled={!assemblyId}
         aria-label="Выбор детали"
       />

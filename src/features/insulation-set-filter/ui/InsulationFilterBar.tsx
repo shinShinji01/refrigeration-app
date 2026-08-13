@@ -69,7 +69,7 @@ export const InsulationFilterBar = () => {
         onChange={(unit) => selectUnit(unit?.id ?? null)}
         getItemLabel={getUnitLabel}
         getItemKey={getUnitKey}
-        placeholder="Установка"
+        label="Установка"
         aria-label="Выбор холодильной установки"
       />
       <Combobox<InsulationSet>
@@ -78,7 +78,7 @@ export const InsulationFilterBar = () => {
         onChange={(set) => selectSet(set?.id ?? null)}
         getItemLabel={getSetLabel}
         getItemKey={getSetKey}
-        placeholder="Версия набора"
+        label="Версия набора"
         disabled={!unitId}
         aria-label="Выбор версии набора изоляции"
       />
