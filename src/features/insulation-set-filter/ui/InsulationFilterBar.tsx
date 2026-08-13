@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { skipToken } from '@reduxjs/toolkit/query/react'
 import { format } from 'date-fns'
-import { Combobox } from '@/shared/ui'
+import { Combobox, FloatingLabelField } from '@/shared/ui'
 import { useGetUnitsQuery } from '@/entities/refrigeration-unit'
 import type { RefrigerationUnit } from '@/entities/refrigeration-unit'
 import type { InsulationSet } from '@/entities/insulation-set'
@@ -84,36 +84,42 @@ export const InsulationFilterBar = () => {
       />
       {unitId && selectedSetId ? (
         <div className={styles.unitNo}>
-          <input
-            className={styles.unitNoInput}
-            type="number"
-            min={1}
-            step={1}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={commitDraft}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                commitDraft()
-              }
-            }}
-            placeholder="№ установки"
-            aria-label="Номер установки"
-          />
+          <FloatingLabelField htmlFor="unit-no-input" label="№ установки">
+            <input
+              id="unit-no-input"
+              className={styles.unitNoInput}
+              type="number"
+              min={1}
+              step={1}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onBlur={commitDraft}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  commitDraft()
+                }
+              }}
+              placeholder=" "
+              aria-label="Номер установки"
+            />
+          </FloatingLabelField>
           {inProgress.length > 0 ? (
-            <div className={styles.chips} role="group" aria-label="Установки в работе">
-              {inProgress.map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  className={styles.chip}
-                  aria-pressed={session.unitNo === selectedUnitNo}
-                  onClick={() => commit(session.unitNo)}
-                >
-                  {session.unitNo}
-                </button>
-              ))}
+            <div className={styles.chipsGroup}>
+              <span className={styles.chipsLabel}>В работе</span>
+              <div className={styles.chips} role="group" aria-label="Установки в работе">
+                {inProgress.map((session) => (
+                  <button
+                    key={session.id}
+                    type="button"
+                    className={styles.chip}
+                    aria-pressed={session.unitNo === selectedUnitNo}
+                    onClick={() => commit(session.unitNo)}
+                  >
+                    {session.unitNo}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : null}
           {commitError ? <p className={styles.error}>{commitError}</p> : null}

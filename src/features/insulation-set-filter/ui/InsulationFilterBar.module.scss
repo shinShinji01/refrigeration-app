@@ -41,6 +41,20 @@
   gap: $space-1;
 }
 
+.chipsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
+
+.chipsLabel {
+  display: block;
+  color: $color-text-muted;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .chip {
   padding: 0 $space-2;
   min-height: 32px;
