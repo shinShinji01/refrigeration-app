@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import TypeInsulationIcon from '@/shared/assets/icons/type-insulation.svg?react'
 import CheckIcon from '@/shared/assets/icons/check.svg?react'
 import MinusIcon from '@/shared/assets/icons/minus.svg?react'
+import PlusIcon from '@/shared/assets/icons/plus.svg?react'
 import { IconButton } from '@/shared/ui'
 import { formatArea } from '@/shared/lib/utils'
 import type { InsulationPieceWithQuantity } from '../model/types'
@@ -115,14 +116,20 @@ export const InsulationPieceCard = ({
         {body}
       </button>
       <div className={styles.stepperControls}>
-        <span className={styles.progress}>
-          {doneCount} / {piece.quantity}
-        </span>
         <IconButton
           icon={MinusIcon}
           label="Убрать одну штуку"
           aria-disabled={doneCount === 0}
           onClick={() => onChangeCount(Math.max(0, doneCount - 1))}
+        />
+        <span className={styles.progress}>
+          {doneCount} / {piece.quantity}
+        </span>
+        <IconButton
+          icon={PlusIcon}
+          label="Добавить одну штуку"
+          aria-disabled={isFull}
+          onClick={() => onChangeCount(Math.min(piece.quantity, doneCount + 1))}
         />
       </div>
       {isFull ? <CheckIcon className={styles.doneIcon} aria-hidden="true" /> : null}
