@@ -1,0 +1,34 @@
+.root {
+  position: relative;
+}
+
+.label {
+  position: absolute;
+  left: $space-3;
+  top: 50%;
+  padding: 0 2px;
+  color: $color-text-disabled;
+  font-size: 0.9375rem;
+  background: transparent;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition:
+    top $duration-fast $easing-standard,
+    font-size $duration-fast $easing-standard,
+    color $duration-fast $easing-standard,
+    background-color $duration-fast $easing-standard;
+}
+
+.root:has(input:focus) .label,
+.root:has(input:not(:placeholder-shown)) .label {
+  top: 0;
+  color: $color-text-muted;
+  background: $color-bg;
+  font-size: 0.6875rem;
+}
+
+@include reduced-motion {
+  .label {
+    transition: none;
+  }
+}
