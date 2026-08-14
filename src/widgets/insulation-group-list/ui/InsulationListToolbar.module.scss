@@ -34,17 +34,25 @@
 }
 
 .collapseToggle {
+  position: relative;
+  margin-left: auto;
+  min-height: 36px;
   padding: 0 $space-3;
 
-  @include touch-target;
   @include tap-feedback;
 
-  color: $color-text;
-  background: $color-bg;
+  color: $color-text-muted;
+  background: $color-surface;
   border: 1px solid $color-border;
   border-radius: $radius-sm;
   font-size: 0.8125rem;
   font-weight: 600;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
 
   &:focus-visible {
     @include focus-ring;

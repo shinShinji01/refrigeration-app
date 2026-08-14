@@ -33,16 +33,16 @@ export const InsulationListToolbar = ({
         По толщине
       </Tabs.Trigger>
     </Tabs.List>
-    {activeView === 'byGroup' ? (
-      <button type="button" className={styles.collapseToggle} onClick={onToggleAllGroups}>
-        {areAllGroupsOpen ? 'Свернуть все' : 'Развернуть все'}
-      </button>
-    ) : null}
     <Checkbox
       id="insulation-detailed-cards"
       checked={detailed}
       onCheckedChange={onDetailedChange}
       label="Подробная информация"
     />
+    {activeView === 'byGroup' ? (
+      <button type="button" className={styles.collapseToggle} onClick={onToggleAllGroups}>
+        {areAllGroupsOpen ? 'Свернуть все' : 'Развернуть все'}
+      </button>
+    ) : null}
   </div>
 )
