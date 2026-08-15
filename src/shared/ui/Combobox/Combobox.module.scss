@@ -10,6 +10,7 @@
 
   @include touch-target;
 
+  height: $touch-target-min; // без этого высота растёт от контента до ~45.6px — не совпадает с SortButton (44px)
   border: 1px solid $color-border;
   border-radius: $radius-sm;
   background: $color-bg;
