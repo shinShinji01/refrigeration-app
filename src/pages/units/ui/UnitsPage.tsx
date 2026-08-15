@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useFilteredComponents } from '@/features/cascade-filter'
+import { useFilteredComponents, CascadeBreadcrumbs } from '@/features/cascade-filter'
 import { FilterBar } from '@/widgets/filter-bar'
 import { ComponentList } from '@/widgets/component-list'
 import { useDebounce } from '@/shared/lib/hooks'
@@ -24,6 +24,7 @@ export const UnitsPage = () => {
         includeArchived={includeArchived}
         onIncludeArchivedChange={setIncludeArchived}
       />
+      <CascadeBreadcrumbs includeArchived={includeArchived} />
       <ComponentList parent={parent} childItems={childItems} isLoading={isLoading} />
     </div>
   )
