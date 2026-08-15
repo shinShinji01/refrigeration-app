@@ -14,6 +14,10 @@
   @include tap-feedback;
 }
 
+.clickable {
+  cursor: pointer;
+}
+
 .archived {
   opacity: 0.55;
 }
@@ -154,4 +158,13 @@
   color: $color-text-muted;
 
   @include tabular-nums;
+}
+
+.openChevron {
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: $color-text-muted;
+  transform: rotate(-90deg); // chevron.svg рисует стрелку вниз — поворот даёт "вправо" (сюда можно провалиться)
 }

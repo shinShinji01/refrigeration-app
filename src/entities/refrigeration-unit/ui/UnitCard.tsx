@@ -9,9 +9,10 @@ interface UnitCardProps {
   onSelectedChange?: (selected: boolean) => void
   onEdit?: () => void
   compact?: boolean
+  onOpen?: () => void
 }
 
-export const UnitCard = ({ unit, selected, onSelectedChange, onEdit, compact }: UnitCardProps) => {
+export const UnitCard = ({ unit, selected, onSelectedChange, onEdit, compact, onOpen }: UnitCardProps) => {
   const { color, icon } = COMPONENT_TYPES.unit
   const { data: assemblies = [] } = useGetAssembliesForUnitQuery(unit.id)
   // Если чертёж не заполнен — показываем id (docs/spec.md → "Общие моменты").
@@ -28,6 +29,7 @@ export const UnitCard = ({ unit, selected, onSelectedChange, onEdit, compact }: 
       onSelectedChange={onSelectedChange}
       onEdit={onEdit}
       compact={compact}
+      onOpen={onOpen}
     >
       <ChildrenSummaryList
         items={assemblies.map((assembly) => ({

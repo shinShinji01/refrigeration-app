@@ -11,12 +11,14 @@ interface ComponentListProps {
   parent: ComponentListItem | null
   childItems: ComponentListItem[]
   isLoading: boolean
+  enableDrilldown: boolean
 }
 
 const renderCard = (
   item: ComponentListItem,
   isSelected: (key: string) => boolean,
   toggleSelected: (key: string) => void,
+  enableDrilldown: boolean,
   compact?: boolean,
 ) => {
   const itemKey = getComponentListItemKey(item)
@@ -28,6 +30,7 @@ const renderCard = (
       selected={isSelected(itemKey)}
       onToggleSelected={toggleSelected}
       compact={compact}
+      enableDrilldown={enableDrilldown}
     />
   )
 }
@@ -39,16 +42,19 @@ const renderGrid = (
   items: ComponentListItem[],
   isSelected: (key: string) => boolean,
   toggleSelected: (key: string) => void,
+  enableDrilldown: boolean,
 ) => {
   const { active, archived } = splitByArchived(items)
   return (
     <>
-      <div className={styles.grid}>{active.map((item) => renderCard(item, isSelected, toggleSelected, true))}</div>
+      <div className={styles.grid}>
+        {active.map((item) => renderCard(item, isSelected, toggleSelected, enableDrilldown, true))}
+      </div>
       {archived.length > 0 ? (
         <>
           <div className={styles.archivedDivider}>Архив</div>
           <div className={styles.grid}>
-            {archived.map((item) => renderCard(item, isSelected, toggleSelected, true))}
+            {archived.map((item) => renderCard(item, isSelected, toggleSelected, enableDrilldown, true))}
           </div>
         </>
       ) : null}
@@ -59,7 +65,7 @@ const renderGrid = (
 // При выбранном родителе (установка/узел) с непустыми детьми — раскладка
 // в две ячейки: слева сам родитель, справа сетка его детей. Иначе — обычная
 // плоская сетка (список установок, глобальный поиск, лист без детей).
-export const ComponentList = ({ parent, childItems, isLoading }: ComponentListProps) => {
+export const ComponentList = ({ parent, childItems, isLoading, enableDrilldown }: ComponentListProps) => {
   const { isSelected, toggleSelected } = useCardSelection()
   const { sortBy } = useCardSort()
 
@@ -87,8 +93,10 @@ export const ComponentList = ({ parent, childItems, isLoading }: ComponentListPr
       <>
         {toolbar}
         <div className={styles.split}>
-          <div className={styles.parentCell}>{renderCard(parent, isSelected, toggleSelected)}</div>
-          <div className={styles.childrenCell}>{renderGrid(sortedChildren, isSelected, toggleSelected)}</div>
+          <div className={styles.parentCell}>{renderCard(parent, isSelected, toggleSelected, false)}</div>
+          <div className={styles.childrenCell}>
+            {renderGrid(sortedChildren, isSelected, toggleSelected, enableDrilldown)}
+          </div>
         </div>
       </>
     )
@@ -98,7 +106,7 @@ export const ComponentList = ({ parent, childItems, isLoading }: ComponentListPr
     return (
       <>
         {toolbar}
-        <div className={styles.grid}>{renderCard(parent, isSelected, toggleSelected)}</div>
+        <div className={styles.grid}>{renderCard(parent, isSelected, toggleSelected, false)}</div>
       </>
     )
   }
@@ -111,7 +119,7 @@ export const ComponentList = ({ parent, childItems, isLoading }: ComponentListPr
   return (
     <>
       {toolbar}
-      {renderGrid(items, isSelected, toggleSelected)}
+      {renderGrid(items, isSelected, toggleSelected, enableDrilldown)}
     </>
   )
 }

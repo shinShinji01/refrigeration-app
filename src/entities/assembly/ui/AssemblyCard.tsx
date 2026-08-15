@@ -12,9 +12,18 @@ interface AssemblyCardProps {
   onSelectedChange?: (selected: boolean) => void
   onEdit?: () => void
   compact?: boolean
+  onOpen?: () => void
 }
 
-export const AssemblyCard = ({ assembly, quantity, selected, onSelectedChange, onEdit, compact }: AssemblyCardProps) => {
+export const AssemblyCard = ({
+  assembly,
+  quantity,
+  selected,
+  onSelectedChange,
+  onEdit,
+  compact,
+  onOpen,
+}: AssemblyCardProps) => {
   const { color, icon } = COMPONENT_TYPES.assembly
   const { data: parts = [] } = useGetPartsForAssemblyQuery(assembly.id)
 
@@ -32,6 +41,7 @@ export const AssemblyCard = ({ assembly, quantity, selected, onSelectedChange, o
       onSelectedChange={onSelectedChange}
       onEdit={onEdit}
       compact={compact}
+      onOpen={onOpen}
     >
       <ChildrenSummaryList
         items={parts.map((part) => ({ id: part.id, label: part.name, quantity: part.quantity }))}

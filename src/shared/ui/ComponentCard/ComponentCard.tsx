@@ -1,6 +1,7 @@
 import type { ComponentType, CSSProperties, ReactNode, SVGProps } from 'react'
 import clsx from 'clsx'
 import EditIcon from '@/shared/assets/icons/edit.svg?react'
+import ChevronIcon from '@/shared/assets/icons/chevron.svg?react'
 import { Checkbox } from '../Checkbox'
 import { IconButton } from '../IconButton'
 import styles from './ComponentCard.module.scss'
@@ -23,6 +24,10 @@ interface ComponentCardProps {
   // Фиксированная высота с обрезкой лишнего контента, разворачивается по
   // ховеру/фокусу — для карточек-детей в сетке (не для выбранной слева).
   compact?: boolean
+  // Клик по карточке "проваливается" на уровень ниже (docs/superpowers/specs/
+  // 2026-08-14-units-card-navigation-design.md) — только для unit/assembly
+  // карточек-детей вне поиска, задаётся вызывающей стороной.
+  onOpen?: () => void
 }
 
 // Общая карточка для всех трёх типов (установка/узел/деталь). Конкретика —
@@ -39,6 +44,7 @@ export const ComponentCard = ({
   selectLabel,
   onEdit,
   compact,
+  onOpen,
 }: ComponentCardProps) => {
   const style: CSSProperties & { '--accent': string } = { '--accent': accentColor }
 
@@ -49,11 +55,29 @@ export const ComponentCard = ({
         isArchived && styles.archived,
         selected && styles.selected,
         compact && styles.compactCard,
+        onOpen && styles.clickable,
       )}
       style={style}
+      onClick={onOpen}
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onKeyDown={
+        onOpen
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onOpen()
+              }
+            }
+          : undefined
+      }
     >
       {onSelectedChange || onEdit ? (
-        <div className={styles.cornerActions}>
+        <div
+          className={styles.cornerActions}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
           {onEdit ? <IconButton icon={EditIcon} label={`Редактировать: ${title}`} onClick={onEdit} /> : null}
           {onSelectedChange ? (
             <Checkbox
@@ -71,6 +95,7 @@ export const ComponentCard = ({
         {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
         {children}
       </div>
+      {onOpen ? <ChevronIcon className={styles.openChevron} aria-hidden="true" /> : null}
     </article>
   )
 

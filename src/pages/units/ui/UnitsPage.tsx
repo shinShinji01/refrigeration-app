@@ -10,7 +10,7 @@ export const UnitsPage = () => {
   const [includeArchived, setIncludeArchived] = useState(false)
   const debouncedSearch = useDebounce(search, 300)
 
-  const { parent, childItems, isLoading } = useFilteredComponents({
+  const { parent, childItems, isLoading, isGlobalSearch } = useFilteredComponents({
     search: debouncedSearch,
     includeArchived,
   })
@@ -25,7 +25,12 @@ export const UnitsPage = () => {
         onIncludeArchivedChange={setIncludeArchived}
       />
       <CascadeBreadcrumbs includeArchived={includeArchived} />
-      <ComponentList parent={parent} childItems={childItems} isLoading={isLoading} />
+      <ComponentList
+        parent={parent}
+        childItems={childItems}
+        isLoading={isLoading}
+        enableDrilldown={!isGlobalSearch}
+      />
     </div>
   )
 }

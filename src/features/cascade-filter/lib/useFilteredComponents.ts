@@ -24,6 +24,11 @@ interface UseFilteredComponentsResult {
   parent: ComponentListItem | null
   childItems: ComponentListItem[]
   isLoading: boolean
+  // Клик-навигация по карточкам (docs/superpowers/specs/
+  // 2026-08-14-units-card-navigation-design.md) включена только вне поиска —
+  // в результатах глобального поиска карточки разных типов показаны
+  // вперемешку без общего родителя, однозначно провалиться некуда.
+  isGlobalSearch: boolean
 }
 
 // Ветки поведения списка карточек: установка не выбрана и поиск пуст — все
@@ -61,6 +66,7 @@ export const useFilteredComponents = ({
         ...matchedParts.map((part): ComponentListItem => ({ kind: 'part', part })),
       ],
       isLoading: globalUnits.isLoading || globalAssemblies.isLoading || globalParts.isLoading,
+      isGlobalSearch: true,
     }
   }
 
@@ -69,12 +75,13 @@ export const useFilteredComponents = ({
       parent: null,
       childItems: units.data?.map((unit): ComponentListItem => ({ kind: 'unit', unit })) ?? [],
       isLoading: units.isLoading,
+      isGlobalSearch: false,
     }
   }
 
   const unit = units.data?.find((candidate) => candidate.id === unitId)
   if (!unit) {
-    return { parent: null, childItems: [], isLoading: units.isLoading }
+    return { parent: null, childItems: [], isLoading: units.isLoading, isGlobalSearch: false }
   }
 
   if (!assemblyId) {
@@ -85,12 +92,18 @@ export const useFilteredComponents = ({
         (assembly): ComponentListItem => ({ kind: 'assembly', assembly, quantity: assembly.quantity }),
       ),
       isLoading: unitAssemblies.isLoading,
+      isGlobalSearch: false,
     }
   }
 
   const assembly = unitAssemblies.data?.find((candidate) => candidate.id === assemblyId)
   if (!assembly) {
-    return { parent: null, childItems: [], isLoading: unitAssemblies.isLoading || assemblyParts.isLoading }
+    return {
+      parent: null,
+      childItems: [],
+      isLoading: unitAssemblies.isLoading || assemblyParts.isLoading,
+      isGlobalSearch: false,
+    }
   }
 
   if (!partId) {
@@ -99,6 +112,7 @@ export const useFilteredComponents = ({
       parent: { kind: 'assembly', assembly, quantity: assembly.quantity },
       childItems: parts.map((part): ComponentListItem => ({ kind: 'part', part, quantity: part.quantity })),
       isLoading: assemblyParts.isLoading,
+      isGlobalSearch: false,
     }
   }
 
@@ -107,5 +121,6 @@ export const useFilteredComponents = ({
     parent: part ? { kind: 'part', part, quantity: part.quantity } : null,
     childItems: [],
     isLoading: assemblyParts.isLoading,
+    isGlobalSearch: false,
   }
 }
