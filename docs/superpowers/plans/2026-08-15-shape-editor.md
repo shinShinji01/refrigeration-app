@@ -1068,19 +1068,107 @@ git commit -m "Add pure editorReducer state machine for shape-editor"
 
 ---
 
-### Task 7: `ShapeEditor.tsx` skeleton — render from `value`, live readout, barrel export
+### Task 7: Pure render helpers + `useShapeEditor` skeleton + `ShapeEditor.tsx` render-only
+
+CLAUDE.md's hard requirement — "разделение логики и UI: компонент в `ui/` не знает о домене; вся логика в кастомных хуках; если в компоненте больше ~120 строк — декомпозируй" — governs how this and every later UI task in this plan are written. All interaction logic accumulates in one hook, `model/useShapeEditor.ts` (co-located per the `model/useCascadeFilter.ts`, `model/useCardSort.ts` convention already used elsewhere in this codebase); `ShapeEditor.tsx` only renders what the hook returns. Two more pure calculations move out to `lib/` here too, alongside the existing `boundsOfPoints`-shaped logic — this keeps the hook itself smaller and adds unit-test coverage that doesn't need RTL.
 
 **Files:**
+- Create: `src/features/shape-editor/lib/boundsOfPoints.ts`
+- Create: `src/features/shape-editor/lib/boundsOfPoints.test.ts`
+- Create: `src/features/shape-editor/lib/formatReadout.ts`
+- Create: `src/features/shape-editor/lib/formatReadout.test.ts`
+- Create: `src/features/shape-editor/model/useShapeEditor.ts`
 - Create: `src/features/shape-editor/ui/ShapeEditor.tsx`
 - Create: `src/features/shape-editor/ui/ShapeEditor.module.scss`
 - Create: `src/features/shape-editor/ui/ShapeEditor.test.tsx`
 - Create: `src/features/shape-editor/index.ts`
 
 **Interfaces:**
-- Consumes: `Point`, `Geometry`, `computeArea` from `@/shared/lib/geometry`; `initEditorState`, `editorReducer`, `geometryFromState`, `geometryEquals`, `EditorState` from `../lib/editorReducer` (Task 6); `fitScale`, `Bounds` from `../lib/fitScale` (Task 5).
-- Produces: `ShapeEditor({ value, onChange }: ShapeEditorProps)`, exported from `features/shape-editor/index.ts`. No pointer interaction yet — renders whatever `value` is passed and reflects external changes; Tasks 8–11 add gestures on top of this file without changing its render contract.
+- Consumes: `Point`, `Geometry` from `@/shared/lib/geometry`; `initEditorState`, `editorReducer`, `geometryFromState`, `geometryEquals`, `EditorState` from `../lib/editorReducer` (Task 6); `fitScale`, `Bounds`, `ViewBox` from `../lib/fitScale` (Task 5); `GRID_STEP_MM` from `../lib/snapToGrid` (Task 2).
+- Produces: `boundsOfPoints(points: Point[]): Bounds`; `formatReadout(state: EditorState): string`; `useShapeEditor(value, onChange)` returning `{ state, dispatch, viewBox }` in this task — Tasks 8–11 extend both the hook's internals and its returned object (adding `svgRef`, pointer handlers, vertex-drag handlers, zoom controls) without changing these three keys. `ShapeEditor({ value, onChange }: ShapeEditorProps)`, exported from `features/shape-editor/index.ts` — renders whatever `value` is passed and reflects external changes; no pointer interaction yet.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the failing tests**
+
+`src/features/shape-editor/lib/boundsOfPoints.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest'
+import { boundsOfPoints, DEFAULT_BOUNDS } from './boundsOfPoints'
+
+describe('boundsOfPoints', () => {
+  it('пустой массив — DEFAULT_BOUNDS', () => {
+    expect(boundsOfPoints([])).toEqual(DEFAULT_BOUNDS)
+  })
+
+  it('одна точка — границы схлопнуты в эту точку', () => {
+    expect(boundsOfPoints([{ x: 10, y: 20 }])).toEqual({ minX: 10, minY: 20, maxX: 10, maxY: 20 })
+  })
+
+  it('несколько точек — минимум/максимум по каждой оси', () => {
+    const points = [
+      { x: 0, y: 50 },
+      { x: 100, y: 0 },
+      { x: 30, y: 200 },
+    ]
+    expect(boundsOfPoints(points)).toEqual({ minX: 0, minY: 0, maxX: 100, maxY: 200 })
+  })
+})
+```
+
+`src/features/shape-editor/lib/formatReadout.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest'
+import { formatReadout } from './formatReadout'
+import type { EditorState } from './editorReducer'
+
+describe('formatReadout', () => {
+  it('empty — просит первые 3 точки', () => {
+    expect(formatReadout({ points: [], status: 'empty', intersecting: false })).toBe('Поставьте ещё 3 точки')
+  })
+
+  it('drawing с 1 точкой — просит ещё 2', () => {
+    const state: EditorState = { points: [{ x: 0, y: 0 }], status: 'drawing', intersecting: false }
+    expect(formatReadout(state)).toBe('Поставьте ещё 2 точки')
+  })
+
+  it('drawing с ≥3 точками — «Можно замкнуть»', () => {
+    const state: EditorState = {
+      points: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }],
+      status: 'drawing',
+      intersecting: false,
+    }
+    expect(formatReadout(state)).toBe('Можно замкнуть')
+  })
+
+  it('closed rect — тип, размеры, площадь', () => {
+    const state: EditorState = {
+      points: [{ x: 0, y: 0 }, { x: 300, y: 0 }, { x: 300, y: 200 }, { x: 0, y: 200 }],
+      status: 'closed',
+      intersecting: false,
+    }
+    expect(formatReadout(state)).toBe('rect 300×200 мм · 0.06 м²')
+  })
+
+  it('closed polygon — тип и площадь', () => {
+    const state: EditorState = {
+      points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 50, y: 100 }],
+      status: 'closed',
+      intersecting: false,
+    }
+    expect(formatReadout(state)).toBe('polygon · 0.01 м²')
+  })
+
+  it('closed, но intersecting — сообщение об ошибке', () => {
+    const state: EditorState = {
+      points: [{ x: 0, y: 0 }, { x: 100, y: 100 }, { x: 100, y: 0 }, { x: 0, y: 100 }],
+      status: 'closed',
+      intersecting: true,
+    }
+    expect(formatReadout(state)).toBe('Самопересечение — исправьте контур')
+  })
+})
+```
 
 `src/features/shape-editor/ui/ShapeEditor.test.tsx`:
 
@@ -1126,67 +1214,74 @@ describe('ShapeEditor — рендер по value', () => {
 })
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm vitest run src/features/shape-editor/ui/ShapeEditor`
-Expected: FAIL — module not found.
+Run: `pnpm vitest run src/features/shape-editor`
+Expected: FAIL — none of the modules exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
 
-`src/features/shape-editor/ui/ShapeEditor.tsx`:
+`src/features/shape-editor/lib/boundsOfPoints.ts`:
 
-```tsx
-import { useEffect, useMemo, useReducer, useRef } from 'react'
-import clsx from 'clsx'
-import type { Geometry } from '@/shared/lib/geometry'
-import { computeArea } from '@/shared/lib/geometry'
-import {
-  editorReducer,
-  geometryEquals,
-  geometryFromState,
-  initEditorState,
-} from '../lib/editorReducer'
-import { fitScale, type Bounds } from '../lib/fitScale'
-import { GRID_STEP_MM } from '../lib/snapToGrid'
-import styles from './ShapeEditor.module.scss'
+```ts
+import type { Point } from '@/shared/lib/geometry'
+import type { Bounds } from './fitScale'
 
-interface ShapeEditorProps {
-  value: Geometry | null
-  onChange: (geometry: Geometry | null) => void
-}
+export const DEFAULT_BOUNDS: Bounds = { minX: 0, minY: 0, maxX: 200, maxY: 200 }
 
-// Литеральные линии сетки каждые 5мм как отдельные SVG-элементы дали бы
-// сотни/тысячи узлов DOM на крупных кусках (метры) — вместо этого тайлим
-// <pattern> фиксированного мм-размера, число DOM-узлов не зависит от
-// размера контура и зума. Числовые подписи на линиях — не в этой версии,
-// точные размеры и так видны в живом отчёте под канвасом.
-const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
-
-const DEFAULT_BOUNDS: Bounds = { minX: 0, minY: 0, maxX: 200, maxY: 200 }
-
-const boundsOfPoints = (points: { x: number; y: number }[]): Bounds => {
+export const boundsOfPoints = (points: Point[]): Bounds => {
   if (points.length === 0) return DEFAULT_BOUNDS
   const xs = points.map((point) => point.x)
   const ys = points.map((point) => point.y)
   return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
 }
+```
 
-const formatReadout = (state: ReturnType<typeof initEditorState>): string => {
-  if (state.status === 'empty') return `Поставьте ещё ${3} точки`
-  if (state.status === 'drawing') {
+`src/features/shape-editor/lib/formatReadout.ts`:
+
+```ts
+import { computeArea } from '@/shared/lib/geometry'
+import { geometryFromState, type EditorState } from './editorReducer'
+
+export const formatReadout = (state: EditorState): string => {
+  if (state.status === 'empty' || state.status === 'drawing') {
     const remaining = Math.max(3 - state.points.length, 0)
     return remaining > 0 ? `Поставьте ещё ${remaining} точки` : 'Можно замкнуть'
   }
   const geometry = geometryFromState(state)
   if (!geometry) return 'Самопересечение — исправьте контур'
-  const areaM2 = computeArea(geometry) / 1_000_000
-  if (geometry.kind === 'rect') {
-    return `rect ${geometry.width}×${geometry.height} мм · ${areaM2} м²`
-  }
+  const areaM2 = Number((computeArea(geometry) / 1_000_000).toFixed(2))
+  if (geometry.kind === 'rect') return `rect ${geometry.width}×${geometry.height} мм · ${areaM2} м²`
   return `polygon · ${areaM2} м²`
 }
+```
 
-export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
+`src/features/shape-editor/model/useShapeEditor.ts`:
+
+```ts
+import { useEffect, useMemo, useReducer, useRef } from 'react'
+import type { Geometry } from '@/shared/lib/geometry'
+import {
+  editorReducer,
+  geometryEquals,
+  geometryFromState,
+  initEditorState,
+  type EditorState,
+  type EditorAction,
+} from '../lib/editorReducer'
+import { fitScale, type ViewBox } from '../lib/fitScale'
+import { boundsOfPoints } from '../lib/boundsOfPoints'
+
+export interface UseShapeEditorResult {
+  state: EditorState
+  dispatch: (action: EditorAction) => void
+  viewBox: ViewBox
+}
+
+export const useShapeEditor = (
+  value: Geometry | null,
+  onChange: (geometry: Geometry | null) => void,
+): UseShapeEditorResult => {
   const [state, dispatch] = useReducer(editorReducer, value, initEditorState)
   const lastSyncedValueRef = useRef<Geometry | null>(value)
   const lastEmittedRef = useRef<Geometry | null>(geometryFromState(state))
@@ -1214,7 +1309,36 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
   const bounds = useMemo(() => boundsOfPoints(state.points), [state.points])
   const viewBox = useMemo(() => fitScale(bounds), [bounds])
 
+  return { state, dispatch, viewBox }
+}
+```
+
+`src/features/shape-editor/ui/ShapeEditor.tsx`:
+
+```tsx
+import clsx from 'clsx'
+import type { Geometry } from '@/shared/lib/geometry'
+import { useShapeEditor } from '../model/useShapeEditor'
+import { formatReadout } from '../lib/formatReadout'
+import { GRID_STEP_MM } from '../lib/snapToGrid'
+import styles from './ShapeEditor.module.scss'
+
+interface ShapeEditorProps {
+  value: Geometry | null
+  onChange: (geometry: Geometry | null) => void
+}
+
+// Литеральные линии сетки каждые 5мм как отдельные SVG-элементы дали бы
+// сотни/тысячи узлов DOM на крупных кусках (метры) — вместо этого тайлим
+// <pattern> фиксированного мм-размера, число DOM-узлов не зависит от
+// размера контура и зума. Числовые подписи на линиях — не в этой версии,
+// точные размеры и так видны в живом отчёте под канвасом.
+const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
+
+export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
+  const { state, viewBox } = useShapeEditor(value, onChange)
   const readout = formatReadout(state)
+  const contourPoints = state.status === 'closed' ? [...state.points, state.points[0]!] : state.points
 
   return (
     <div className={styles.root}>
@@ -1233,38 +1357,16 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
             <path d={`M ${GRID_MAJOR_STEP_MM} 0 L 0 0 0 ${GRID_MAJOR_STEP_MM}`} className={styles.gridMajorLine} />
           </pattern>
         </defs>
-        <rect
-          x={viewBox.x}
-          y={viewBox.y}
-          width={viewBox.width}
-          height={viewBox.height}
-          fill="url(#grid-minor)"
-        />
-        <rect
-          x={viewBox.x}
-          y={viewBox.y}
-          width={viewBox.width}
-          height={viewBox.height}
-          fill="url(#grid-major)"
-        />
+        <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-minor)" />
+        <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-major)" />
         {state.points.length >= 2 ? (
           <polyline
             className={clsx(styles.contour, state.intersecting && styles.contourInvalid)}
-            points={
-              (state.status === 'closed'
-                ? [...state.points, state.points[0]!]
-                : state.points
-              )
-                .map((point) => `${point.x},${point.y}`)
-                .join(' ')
-            }
+            points={contourPoints.map((point) => `${point.x},${point.y}`).join(' ')}
           />
         ) : null}
         {state.status === 'closed' ? (
-          <polygon
-            className={styles.fill}
-            points={state.points.map((point) => `${point.x},${point.y}`).join(' ')}
-          />
+          <polygon className={styles.fill} points={state.points.map((point) => `${point.x},${point.y}`).join(' ')} />
         ) : null}
         {state.points.map((point, index) => (
           <circle
@@ -1369,15 +1471,47 @@ git commit -m "Add ShapeEditor skeleton rendering from value"
 ### Task 8: Polygon click-to-place + Замкнуть/Назад/Очистить
 
 **Files:**
+- Create: `src/features/shape-editor/lib/clientToMm.ts`
+- Create: `src/features/shape-editor/lib/clientToMm.test.ts`
+- Modify: `src/features/shape-editor/model/useShapeEditor.ts`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.tsx`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.module.scss`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.test.tsx`
 
 **Interfaces:**
 - Consumes: `snapToGrid`, `GRID_STEP_MM` from `../lib/snapToGrid` (Task 2).
-- Produces: canvas click handler dispatching `point-added`; toolbar buttons dispatching `closed-by-button` / `last-point-undone` / `cleared`, each with `data-testid` (`shape-editor-close`, `shape-editor-undo`, `shape-editor-clear`) so Task 9/10 tests and future consumers can target them without relying on visible text. Task 9 (drag rectangle) replaces the click handler added here with a pointerdown/move/up handler that preserves this task's click-equivalent behavior — covered by re-running this task's tests in Task 9's Step 4.
+- Produces: `clientToMm(clientX, clientY, rect, viewBox): Point` — a pure coordinate-conversion helper (takes a plain `{ left, top, width, height }` rect instead of a real `DOMRect` so it needs no DOM mocking to test) used by every pointer handler from here through Task 11. `useShapeEditor` now also returns `svgRef`, `canClose`, and `handleCanvasClick`; `ShapeEditor.tsx` wires `svgRef`/`handleCanvasClick` onto the `<svg>` and adds the toolbar, dispatching `closed-by-button` / `last-point-undone` / `cleared` directly via the hook's `dispatch`, each button with a `data-testid` (`shape-editor-close`, `shape-editor-undo`, `shape-editor-clear`) so later tasks' tests and future consumers can target them without relying on visible text. Task 9 (drag rectangle) replaces `handleCanvasClick` inside the hook with a pointerdown/move/up handler pair that preserves this task's click-equivalent behavior — covered by re-running this task's tests in Task 9's Step 4.
 
 - [ ] **Step 1: Write the failing tests**
+
+`src/features/shape-editor/lib/clientToMm.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest'
+import { clientToMm } from './clientToMm'
+
+const RECT = { left: 0, top: 0, width: 360, height: 360 }
+const VIEW_BOX = { x: -15, y: -15, width: 130, height: 130 }
+
+describe('clientToMm', () => {
+  it('центр канваса — центр viewBox', () => {
+    expect(clientToMm(180, 180, RECT, VIEW_BOX)).toEqual({ x: 50, y: 50 })
+  })
+
+  it('верхний левый угол канваса — верхний левый угол viewBox', () => {
+    expect(clientToMm(0, 0, RECT, VIEW_BOX)).toEqual({ x: -15, y: -15 })
+  })
+
+  it('канвас со смещённым left/top (например, внутри модалки) учитывается', () => {
+    const offsetRect = { left: 100, top: 50, width: 360, height: 360 }
+    expect(clientToMm(100, 50, offsetRect, VIEW_BOX)).toEqual({ x: -15, y: -15 })
+  })
+
+  it('нулевой rect (элемент ещё не в DOM) не делится на ноль', () => {
+    expect(clientToMm(10, 10, { left: 0, top: 0, width: 0, height: 0 }, VIEW_BOX)).toEqual({ x: -15, y: -15 })
+  })
+})
+```
 
 Add to `ShapeEditor.test.tsx` (new `describe` block, existing tests untouched):
 
@@ -1472,58 +1606,63 @@ describe('ShapeEditor — рисование многоугольника тап
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `pnpm vitest run src/features/shape-editor/ui/ShapeEditor`
-Expected: FAIL — no canvas click handler, no toolbar buttons/testids yet.
+Run: `pnpm vitest run src/features/shape-editor`
+Expected: FAIL — `clientToMm` module not found; canvas has no click handler, no toolbar buttons/testids yet.
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `ShapeEditor.tsx`, add imports and replace the returned JSX (full new file content):
+`src/features/shape-editor/lib/clientToMm.ts`:
 
-```tsx
+```ts
+import type { Point } from '@/shared/lib/geometry'
+import type { ViewBox } from './fitScale'
+
+export interface ClientRect {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export const clientToMm = (clientX: number, clientY: number, rect: ClientRect, viewBox: ViewBox): Point => {
+  const xRatio = rect.width === 0 ? 0 : (clientX - rect.left) / rect.width
+  const yRatio = rect.height === 0 ? 0 : (clientY - rect.top) / rect.height
+  return { x: viewBox.x + xRatio * viewBox.width, y: viewBox.y + yRatio * viewBox.height }
+}
+```
+
+`src/features/shape-editor/model/useShapeEditor.ts` — add a `svgRef`, the click handler, and `canClose` to the existing hook (full new file content):
+
+```ts
 import { useEffect, useMemo, useReducer, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import clsx from 'clsx'
-import type { Geometry, Point } from '@/shared/lib/geometry'
-import { computeArea } from '@/shared/lib/geometry'
+import type { Geometry } from '@/shared/lib/geometry'
 import {
   editorReducer,
   geometryEquals,
   geometryFromState,
   initEditorState,
+  type EditorState,
+  type EditorAction,
 } from '../lib/editorReducer'
-import { fitScale, type Bounds } from '../lib/fitScale'
-import { GRID_STEP_MM, snapToGrid } from '../lib/snapToGrid'
-import styles from './ShapeEditor.module.scss'
+import { fitScale, type ViewBox } from '../lib/fitScale'
+import { boundsOfPoints } from '../lib/boundsOfPoints'
+import { clientToMm } from '../lib/clientToMm'
+import { snapToGrid } from '../lib/snapToGrid'
 
-interface ShapeEditorProps {
-  value: Geometry | null
-  onChange: (geometry: Geometry | null) => void
+export interface UseShapeEditorResult {
+  state: EditorState
+  dispatch: (action: EditorAction) => void
+  viewBox: ViewBox
+  svgRef: React.RefObject<SVGSVGElement | null>
+  canClose: boolean
+  handleCanvasClick: (event: ReactPointerEvent<SVGSVGElement>) => void
 }
 
-const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
-
-const DEFAULT_BOUNDS: Bounds = { minX: 0, minY: 0, maxX: 200, maxY: 200 }
-
-const boundsOfPoints = (points: Point[]): Bounds => {
-  if (points.length === 0) return DEFAULT_BOUNDS
-  const xs = points.map((point) => point.x)
-  const ys = points.map((point) => point.y)
-  return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
-}
-
-const formatReadout = (state: ReturnType<typeof initEditorState>): string => {
-  if (state.status === 'empty' || state.status === 'drawing') {
-    const remaining = Math.max(3 - state.points.length, 0)
-    return remaining > 0 ? `Поставьте ещё ${remaining} точки` : 'Можно замкнуть'
-  }
-  const geometry = geometryFromState(state)
-  if (!geometry) return 'Самопересечение — исправьте контур'
-  const areaM2 = Number((computeArea(geometry) / 1_000_000).toFixed(2))
-  if (geometry.kind === 'rect') return `rect ${geometry.width}×${geometry.height} мм · ${areaM2} м²`
-  return `polygon · ${areaM2} м²`
-}
-
-export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
+export const useShapeEditor = (
+  value: Geometry | null,
+  onChange: (geometry: Geometry | null) => void,
+): UseShapeEditorResult => {
   const [state, dispatch] = useReducer(editorReducer, value, initEditorState)
   const lastSyncedValueRef = useRef<Geometry | null>(value)
   const lastEmittedRef = useRef<Geometry | null>(geometryFromState(state))
@@ -1547,24 +1686,39 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
   const bounds = useMemo(() => boundsOfPoints(state.points), [state.points])
   const viewBox = useMemo(() => fitScale(bounds), [bounds])
 
-  const clientToMm = (clientX: number, clientY: number): Point => {
-    const svg = svgRef.current
-    if (!svg) return { x: 0, y: 0 }
-    const rect = svg.getBoundingClientRect()
-    const xRatio = rect.width === 0 ? 0 : (clientX - rect.left) / rect.width
-    const yRatio = rect.height === 0 ? 0 : (clientY - rect.top) / rect.height
-    return { x: viewBox.x + xRatio * viewBox.width, y: viewBox.y + yRatio * viewBox.height }
-  }
-
   const handleCanvasClick = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (state.status === 'closed') return
-    const point = snapToGrid(clientToMm(event.clientX, event.clientY))
+    const svg = svgRef.current
+    if (!svg) return
+    const point = snapToGrid(clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox))
     dispatch({ type: 'point-added', point })
   }
 
-  const canClose = state.points.length >= 3
+  return { state, dispatch, viewBox, svgRef, canClose: state.points.length >= 3, handleCanvasClick }
+}
+```
 
+`src/features/shape-editor/ui/ShapeEditor.tsx` (full new file content):
+
+```tsx
+import clsx from 'clsx'
+import type { Geometry } from '@/shared/lib/geometry'
+import { useShapeEditor } from '../model/useShapeEditor'
+import { formatReadout } from '../lib/formatReadout'
+import { GRID_STEP_MM } from '../lib/snapToGrid'
+import styles from './ShapeEditor.module.scss'
+
+interface ShapeEditorProps {
+  value: Geometry | null
+  onChange: (geometry: Geometry | null) => void
+}
+
+const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
+
+export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
+  const { state, dispatch, viewBox, svgRef, canClose, handleCanvasClick } = useShapeEditor(value, onChange)
   const readout = formatReadout(state)
+  const contourPoints = state.status === 'closed' ? [...state.points, state.points[0]!] : state.points
 
   return (
     <div className={styles.root}>
@@ -1590,9 +1744,7 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
         {state.points.length >= 2 ? (
           <polyline
             className={clsx(styles.contour, state.intersecting && styles.contourInvalid)}
-            points={(state.status === 'closed' ? [...state.points, state.points[0]!] : state.points)
-              .map((point) => `${point.x},${point.y}`)
-              .join(' ')}
+            points={contourPoints.map((point) => `${point.x},${point.y}`).join(' ')}
           />
         ) : null}
         {state.status === 'closed' ? (
@@ -1698,12 +1850,13 @@ git commit -m "Add polygon click-to-place drawing and toolbar to ShapeEditor"
 ### Task 9: Rectangle drag-shortcut
 
 **Files:**
+- Modify: `src/features/shape-editor/model/useShapeEditor.ts`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.tsx`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.test.tsx`
 
 **Interfaces:**
-- Consumes: `GRID_STEP_MM` from `../lib/snapToGrid` (drag-vs-tap distance threshold).
-- Produces: canvas `onPointerDown`/`onPointerMove`/`onPointerUp` replacing Task 8's `onClick`, dispatching `rect-drawn` for a drag ≥1 grid step starting from 0 points, and falling back to the same `point-added` behavior as Task 8 for a short drag/tap. Task 10 (vertex drag) adds a second `onPointerDown` target (the vertex circles) that takes priority over this canvas-level handler.
+- Consumes: `GRID_STEP_MM` from `../lib/snapToGrid` (drag-vs-tap distance threshold, alongside the already-imported `snapToGrid`).
+- Produces: `useShapeEditor` now returns `handlePointerDown`/`handlePointerUp` instead of `handleCanvasClick`, dispatching `rect-drawn` for a drag ≥1 grid step starting from 0 points, and falling back to the same `point-added` behavior as Task 8 for a short drag/tap. Task 10 (vertex drag) adds a second `onPointerDown` target (the vertex circles) that takes priority over this canvas-level handler. Task 11 adds pinch-zoom tracking that reuses these two handlers' pointer-count bookkeeping.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1762,14 +1915,24 @@ Expected: FAIL — canvas has no pointerdown/move/up wiring yet (still plain `on
 
 - [ ] **Step 3: Write minimal implementation**
 
-Replace `handleCanvasClick` in `ShapeEditor.tsx` with pointer-sequence handling. Add a ref for the drag-start point and swap the SVG's `onClick` for the three pointer handlers:
+In `useShapeEditor.ts`, change the `GRID_STEP_MM`/`snapToGrid` import to also bring in `GRID_STEP_MM`, add a drag-start ref, and replace `handleCanvasClick` with `handlePointerDown`/`handlePointerUp`:
 
-```tsx
+Change the import line:
+
+```ts
+import { GRID_STEP_MM, snapToGrid } from '../lib/snapToGrid'
+```
+
+Replace the `handleCanvasClick` function and the hook's return statement with:
+
+```ts
   const dragStartRef = useRef<Point | null>(null)
 
   const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (state.status === 'closed') return
-    dragStartRef.current = clientToMm(event.clientX, event.clientY)
+    const svg = svgRef.current
+    if (!svg) return
+    dragStartRef.current = clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)
   }
 
   const handlePointerUp = (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -1780,8 +1943,10 @@ Replace `handleCanvasClick` in `ShapeEditor.tsx` with pointer-sequence handling.
     const start = dragStartRef.current
     dragStartRef.current = null
     if (!start) return
+    const svg = svgRef.current
+    if (!svg) return
 
-    const end = clientToMm(event.clientX, event.clientY)
+    const end = clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)
     const distanceMm = Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y))
     const isDrag = distanceMm >= GRID_STEP_MM
 
@@ -1789,17 +1954,24 @@ Replace `handleCanvasClick` in `ShapeEditor.tsx` with pointer-sequence handling.
       dispatch({ type: 'rect-drawn', corner1: snapToGrid(start), corner2: snapToGrid(end) })
       return
     }
-
-    const point = snapToGrid(end)
-    dispatch({ type: 'point-added', point })
+    dispatch({ type: 'point-added', point: snapToGrid(end) })
   }
+
+  return { state, dispatch, viewBox, svgRef, canClose: state.points.length >= 3, handlePointerDown, handlePointerUp }
 ```
 
-Update the `<svg>` element: remove `onClick={handleCanvasClick}`, add `onPointerDown={handlePointerDown}` and `onPointerUp={handlePointerUp}` (leave `onPointerMove` unused for now — Task 10 adds a live drag-preview that reads it; no handler needed yet since the reducer only receives the final result on pointer-up). Delete the now-unused `handleCanvasClick` function. Add the `GRID_STEP_MM` import: `import { GRID_STEP_MM, snapToGrid } from '../lib/snapToGrid'`.
+Add `Point` to the existing `import type { Geometry } from '@/shared/lib/geometry'` line, making it `import type { Geometry, Point } from '@/shared/lib/geometry'`. Add `handlePointerDown`/`handlePointerUp` to the `UseShapeEditorResult` interface in place of `handleCanvasClick`:
+
+```ts
+  handlePointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handlePointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void
+```
+
+In `ShapeEditor.tsx`: destructure `handlePointerDown, handlePointerUp` instead of `handleCanvasClick` from `useShapeEditor(...)`, and on the `<svg>` element replace `onClick={handleCanvasClick}` with `onPointerDown={handlePointerDown}` and `onPointerUp={handlePointerUp}`.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm vitest run src/features/shape-editor/ui/ShapeEditor`
+Run: `pnpm vitest run src/features/shape-editor`
 Expected: PASS — all tests from Tasks 7, 8, and 9 green (Task 8's click-based tests must still pass since `fireEvent.click` in jsdom does not emit pointerdown/up on its own; update Task 8's tests that used `fireEvent.click(canvas, ...)` for point-placement to use `fireEvent.pointerDown` immediately followed by `fireEvent.pointerUp` at the same coordinates instead — edit those four call sites in the "рисование многоугольника тапами" describe block accordingly before re-running).
 
 - [ ] **Step 5: Commit**
@@ -1813,14 +1985,17 @@ git commit -m "Add rectangle drag shortcut to ShapeEditor"
 
 ### Task 10: Vertex drag-editing + self-intersection highlight
 
+A separate small hook rather than folding into `useShapeEditor.ts` — vertex-dragging is a self-contained concern (its own ref, its own three handlers) that only needs `dispatch`, `svgRef`, and `viewBox` from the state hook, so it composes alongside it in `ShapeEditor.tsx` instead of growing the state hook further (keeps both hooks comfortably under the ~120-line guideline from `CLAUDE.md`).
+
 **Files:**
+- Create: `src/features/shape-editor/model/useVertexDrag.ts`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.tsx`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.module.scss`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.test.tsx`
 
 **Interfaces:**
-- Consumes: nothing new.
-- Produces: each vertex `<circle>` gets its own `onPointerDown`/`onPointerMove`/`onPointerUp` dragging that vertex via `vertex-moved`; `.contourInvalid` styling (already defined in Task 7) now actually activates via `state.intersecting`.
+- Consumes: `clientToMm` (Task 8), `snapToGrid` (Task 2); `dispatch`, `svgRef`, `viewBox` from `useShapeEditor` (Tasks 7–9).
+- Produces: `useVertexDrag({ dispatch, svgRef, viewBox })` returning `getVertexHandlers(index): { onPointerDown, onPointerMove, onPointerUp }`, spread onto each vertex `<circle>` to drag it via `vertex-moved`. `.contourInvalid` styling (already defined in Task 7) now actually activates via `state.intersecting`, and vertices get the matching `.vertexInvalid` fill.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1870,50 +2045,71 @@ Expected: FAIL — vertices have no pointer handlers yet.
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `ShapeEditor.tsx`, add a second drag-tracking ref and per-vertex handlers, then wire them onto each `<circle>`:
+`src/features/shape-editor/model/useVertexDrag.ts`:
 
-```tsx
-  const vertexDragIndexRef = useRef<number | null>(null)
+```ts
+import { useRef } from 'react'
+import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
+import { clientToMm } from '../lib/clientToMm'
+import { snapToGrid } from '../lib/snapToGrid'
+import type { EditorAction } from '../lib/editorReducer'
+import type { ViewBox } from '../lib/fitScale'
 
-  const handleVertexPointerDown = (index: number) => (event: ReactPointerEvent<SVGCircleElement>) => {
-    event.stopPropagation() // не даём канвасу интерпретировать это как начало нового контура/rect-драга
-    if (state.status !== 'closed') return
-    vertexDragIndexRef.current = index
-  }
+interface UseVertexDragArgs {
+  dispatch: (action: EditorAction) => void
+  svgRef: RefObject<SVGSVGElement | null>
+  viewBox: ViewBox
+}
 
-  const handleVertexPointerMove = (event: ReactPointerEvent<SVGCircleElement>) => {
-    event.stopPropagation()
-    const index = vertexDragIndexRef.current
-    if (index === null) return
-    const point = snapToGrid(clientToMm(event.clientX, event.clientY))
-    dispatch({ type: 'vertex-moved', index, point })
-  }
+export const useVertexDrag = ({ dispatch, svgRef, viewBox }: UseVertexDragArgs) => {
+  const draggedIndexRef = useRef<number | null>(null)
 
-  const handleVertexPointerUp = (event: ReactPointerEvent<SVGCircleElement>) => {
-    event.stopPropagation()
-    vertexDragIndexRef.current = null
-  }
+  const getVertexHandlers = (index: number) => ({
+    onPointerDown: (event: ReactPointerEvent<SVGCircleElement>) => {
+      event.stopPropagation() // не даём канвасу интерпретировать это как начало нового контура/rect-драга
+      draggedIndexRef.current = index
+    },
+    onPointerMove: (event: ReactPointerEvent<SVGCircleElement>) => {
+      event.stopPropagation()
+      if (draggedIndexRef.current === null) return
+      const svg = svgRef.current
+      if (!svg) return
+      const point = snapToGrid(clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox))
+      dispatch({ type: 'vertex-moved', index: draggedIndexRef.current, point })
+    },
+    onPointerUp: (event: ReactPointerEvent<SVGCircleElement>) => {
+      event.stopPropagation()
+      draggedIndexRef.current = null
+    },
+  })
+
+  return { getVertexHandlers }
+}
 ```
 
-Update each `<circle>` in the render:
+In `ShapeEditor.tsx`, import and call the new hook, and spread its handlers onto each vertex `<circle>`:
+
+```tsx
+import { useVertexDrag } from '../model/useVertexDrag'
+```
+
+```tsx
+  const { getVertexHandlers } = useVertexDrag({ dispatch, svgRef, viewBox })
+```
 
 ```tsx
         {state.points.map((point, index) => (
           <circle
             key={index}
             data-testid={`shape-editor-vertex-${index}`}
-            className={styles.vertex}
+            className={clsx(styles.vertex, state.intersecting && styles.vertexInvalid)}
             cx={point.x}
             cy={point.y}
             r={4}
-            onPointerDown={handleVertexPointerDown(index)}
-            onPointerMove={handleVertexPointerMove}
-            onPointerUp={handleVertexPointerUp}
+            {...getVertexHandlers(index)}
           />
         ))}
 ```
-
-`clientToMm` already reads `viewBox` from render scope, so it works unchanged for vertex events too (vertex `<circle>` is inside the same `<svg>`, `event.clientX/Y` are still page-relative — `svgRef.current!.getBoundingClientRect()` is still the right reference rect).
 
 Add self-intersection color to `ShapeEditor.module.scss` (vertex should also redden while intersecting — extend the existing rule):
 
@@ -1923,15 +2119,9 @@ Add self-intersection color to `ShapeEditor.module.scss` (vertex should also red
 }
 ```
 
-And in the render, flag the dragged vertex's own color when `state.intersecting`:
-
-```tsx
-            className={clsx(styles.vertex, state.intersecting && styles.vertexInvalid)}
-```
-
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm vitest run src/features/shape-editor/ui/ShapeEditor`
+Run: `pnpm vitest run src/features/shape-editor`
 Expected: PASS, all tests from Tasks 7–10 green.
 
 - [ ] **Step 5: Commit**
@@ -1945,14 +2135,17 @@ git commit -m "Add vertex drag-editing and self-intersection highlight to ShapeE
 
 ### Task 11: Zoom (buttons + wheel + pinch) and «По размеру»
 
+This is the last change to `useShapeEditor.ts` — after this task it holds the full canvas-viewport/gesture concern (state sync, bounds/viewBox, click-or-drag-to-draw, pinch-and-wheel zoom). It lands noticeably over the codebase's usual ~120-line hook size (the largest existing hook, `useInsulationProgress.ts`, is 123 lines) because zoom, pinch, and single-pointer drawing all read and mutate the same pointer-tracking refs and can't be split across files without threading most of the hook's internals back and forth between two hooks. If the Task 11 reviewer calls this out, the documented fallback is extracting `applyZoom`/`handleWheel`/pinch tracking into a sibling `useZoomControls.ts` that takes `{ autoViewBox }` and returns `{ viewBox, manualViewBox, applyZoom, resetZoom }`, with `handlePointerDown`/`handlePointerUp` in `useShapeEditor.ts` calling its exported `applyZoom` instead of a local copy — raise this as an option during that task's fix round rather than pre-emptively splitting it here.
+
 **Files:**
+- Modify: `src/features/shape-editor/model/useShapeEditor.ts`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.tsx`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.module.scss`
 - Modify: `src/features/shape-editor/ui/ShapeEditor.test.tsx`
 
 **Interfaces:**
 - Consumes: `plus.svg`/`minus.svg` from `@/shared/assets/icons` (already exist), `IconButton` from `@/shared/ui`.
-- Produces: `+`/`−` `IconButton`s (`data-testid` `shape-editor-zoom-in`/`shape-editor-zoom-out`), a `wheel` handler on the canvas, a two-pointer pinch handler, and a «По размеру» button (`data-testid="shape-editor-fit"`) that clears manual zoom. This is the last behavioral task — Task 12 only wires the barrel export into a real form and runs `pnpm check`.
+- Produces: `useShapeEditor` now also returns `manualViewBox`, `zoomIn`, `zoomOut`, `resetZoom`, `handlePointerMove`, `handleWheel`; `ShapeEditor.tsx` wires `+`/`−` `IconButton`s (`data-testid` `shape-editor-zoom-in`/`shape-editor-zoom-out`), a `wheel` handler on the canvas, and a «По размеру» button (`data-testid="shape-editor-fit"`) that clears manual zoom. This is the last behavioral task — Task 12 only mounts the component in a real page and runs `pnpm check`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2012,29 +2205,73 @@ Expected: FAIL — no zoom buttons/wheel handler yet.
 
 - [ ] **Step 3: Write minimal implementation**
 
-Add manual-zoom state and derivation to `ShapeEditor.tsx`. Insert near the top of the component, after the existing `useReducer`/refs:
+`src/features/shape-editor/model/useShapeEditor.ts` — full new file content:
 
-```tsx
-  const [manualViewBox, setManualViewBox] = useState<ViewBox | null>(null)
-```
+```ts
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react'
+import type { Geometry, Point } from '@/shared/lib/geometry'
+import {
+  editorReducer,
+  geometryEquals,
+  geometryFromState,
+  initEditorState,
+  type EditorState,
+  type EditorAction,
+} from '../lib/editorReducer'
+import { fitScale, type ViewBox } from '../lib/fitScale'
+import { boundsOfPoints } from '../lib/boundsOfPoints'
+import { clientToMm } from '../lib/clientToMm'
+import { GRID_STEP_MM, snapToGrid } from '../lib/snapToGrid'
 
-Add the `ViewBox` type import: `import { fitScale, type Bounds, type ViewBox } from '../lib/fitScale'`, and `useState` to the React import list.
+const ZOOM_STEP_FACTOR = 1.25
+const MIN_VIEWBOX_SIZE_MM = 20
+const MAX_VIEWBOX_SIZE_MM = 20_000
 
-Replace the `viewBox` derivation:
+export interface UseShapeEditorResult {
+  state: EditorState
+  dispatch: (action: EditorAction) => void
+  viewBox: ViewBox
+  manualViewBox: ViewBox | null
+  svgRef: React.RefObject<SVGSVGElement | null>
+  canClose: boolean
+  handlePointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handlePointerMove: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handlePointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handleWheel: (event: ReactWheelEvent<SVGSVGElement>) => void
+  zoomIn: () => void
+  zoomOut: () => void
+  resetZoom: () => void
+}
 
-```tsx
+export const useShapeEditor = (
+  value: Geometry | null,
+  onChange: (geometry: Geometry | null) => void,
+): UseShapeEditorResult => {
+  const [state, dispatch] = useReducer(editorReducer, value, initEditorState)
+  const lastSyncedValueRef = useRef<Geometry | null>(value)
+  const lastEmittedRef = useRef<Geometry | null>(geometryFromState(state))
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  useEffect(() => {
+    if (value === lastSyncedValueRef.current) return
+    lastSyncedValueRef.current = value
+    dispatch({ type: 'value-synced', geometry: value })
+  }, [value])
+
+  const geometry = geometryFromState(state)
+  useEffect(() => {
+    if (lastSyncedValueRef.current !== value) return
+    if (geometryEquals(geometry, lastEmittedRef.current)) return
+    lastEmittedRef.current = geometry
+    onChange(geometry)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geometry])
+
+  const bounds = useMemo(() => boundsOfPoints(state.points), [state.points])
   const autoViewBox = useMemo(() => fitScale(bounds), [bounds])
+  const [manualViewBox, setManualViewBox] = useState<ViewBox | null>(null)
   const viewBox = manualViewBox ?? autoViewBox
-```
-
-(remove the old `const viewBox = useMemo(() => fitScale(bounds), [bounds])` line.)
-
-Add zoom helpers and handlers, plus a pinch-tracking ref, above the `return`:
-
-```tsx
-  const ZOOM_STEP_FACTOR = 1.25
-  const MIN_VIEWBOX_SIZE_MM = 20
-  const MAX_VIEWBOX_SIZE_MM = 20_000
 
   const applyZoom = (factor: number) => {
     const base = manualViewBox ?? autoViewBox
@@ -2050,18 +2287,25 @@ Add zoom helpers and handlers, plus a pinch-tracking ref, above the `return`:
     applyZoom(event.deltaY < 0 ? ZOOM_STEP_FACTOR : 1 / ZOOM_STEP_FACTOR)
   }
 
-  const pinchStartDistanceRef = useRef<number | null>(null)
+  const dragStartRef = useRef<Point | null>(null)
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const pinchStartDistanceRef = useRef<number | null>(null)
 
-  const handleCanvasPointerDownForPinch = (event: ReactPointerEvent<SVGSVGElement>) => {
+  const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (activePointersRef.current.size === 2) {
       const [a, b] = [...activePointersRef.current.values()]
       pinchStartDistanceRef.current = Math.hypot(a!.x - b!.x, a!.y - b!.y)
+      dragStartRef.current = null
+      return
     }
+    if (state.status === 'closed') return
+    const svg = svgRef.current
+    if (!svg) return
+    dragStartRef.current = clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)
   }
 
-  const handleCanvasPointerMoveForPinch = (event: ReactPointerEvent<SVGSVGElement>) => {
+  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!activePointersRef.current.has(event.pointerId)) return
     activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (activePointersRef.current.size !== 2 || pinchStartDistanceRef.current === null) return
@@ -2073,31 +2317,10 @@ Add zoom helpers and handlers, plus a pinch-tracking ref, above the `return`:
     pinchStartDistanceRef.current = distance
   }
 
-  const handleCanvasPointerUpForPinch = (event: ReactPointerEvent<SVGSVGElement>) => {
+  const handlePointerUp = (event: ReactPointerEvent<SVGSVGElement>) => {
     activePointersRef.current.delete(event.pointerId)
     if (activePointersRef.current.size < 2) pinchStartDistanceRef.current = null
-  }
-```
 
-Wire pinch tracking into the existing `handlePointerDown`/`handlePointerUp` from Task 9 (call the pinch helpers first, then the existing single-pointer drawing logic only when exactly one pointer is active):
-
-```tsx
-  const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
-    handleCanvasPointerDownForPinch(event)
-    if (activePointersRef.current.size > 1) {
-      dragStartRef.current = null // второй палец — это pinch, не рисование
-      return
-    }
-    if (state.status === 'closed') return
-    dragStartRef.current = clientToMm(event.clientX, event.clientY)
-  }
-
-  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
-    handleCanvasPointerMoveForPinch(event)
-  }
-
-  const handlePointerUp = (event: ReactPointerEvent<SVGSVGElement>) => {
-    handleCanvasPointerUpForPinch(event)
     if (state.status === 'closed') {
       dragStartRef.current = null
       return
@@ -2105,8 +2328,10 @@ Wire pinch tracking into the existing `handlePointerDown`/`handlePointerUp` from
     const start = dragStartRef.current
     dragStartRef.current = null
     if (!start) return
+    const svg = svgRef.current
+    if (!svg) return
 
-    const end = clientToMm(event.clientX, event.clientY)
+    const end = clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)
     const distanceMm = Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y))
     const isDrag = distanceMm >= GRID_STEP_MM
 
@@ -2114,49 +2339,177 @@ Wire pinch tracking into the existing `handlePointerDown`/`handlePointerUp` from
       dispatch({ type: 'rect-drawn', corner1: snapToGrid(start), corner2: snapToGrid(end) })
       return
     }
-
-    const point = snapToGrid(end)
-    dispatch({ type: 'point-added', point })
+    dispatch({ type: 'point-added', point: snapToGrid(end) })
   }
+
+  return {
+    state,
+    dispatch,
+    viewBox,
+    manualViewBox,
+    svgRef,
+    canClose: state.points.length >= 3,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleWheel,
+    zoomIn: () => applyZoom(ZOOM_STEP_FACTOR),
+    zoomOut: () => applyZoom(1 / ZOOM_STEP_FACTOR),
+    resetZoom: () => setManualViewBox(null),
+  }
+}
 ```
 
-This is the exact same body as Task 9's `handlePointerUp`, with one line added at the top (`handleCanvasPointerUpForPinch(event)`) — replace Task 9's version of this function with this one.
+This folds in Task 9's `handlePointerDown`/`handlePointerUp` bodies with pinch-tracking bookkeeping added at the top of each (pointer-count tracking and, for `handlePointerDown`, bailing out to pinch instead of drag once a second pointer is active), plus the new `handlePointerMove` (previously unused), `handleWheel`, `applyZoom`, and the `manualViewBox` state that makes `viewBox` a manual/auto merge instead of always-auto.
 
-Add `onPointerMove={handlePointerMove}` and `onWheel={handleWheel}` to the `<svg>` element (alongside the existing `onPointerDown`/`onPointerUp`).
-
-Add the toolbar buttons — extend the `.toolbar` div from Task 8:
+`src/features/shape-editor/ui/ShapeEditor.tsx` — full new file content:
 
 ```tsx
+import clsx from 'clsx'
+import type { Geometry } from '@/shared/lib/geometry'
+import { useShapeEditor } from '../model/useShapeEditor'
+import { useVertexDrag } from '../model/useVertexDrag'
+import { formatReadout } from '../lib/formatReadout'
+import { GRID_STEP_MM } from '../lib/snapToGrid'
+import PlusIcon from '@/shared/assets/icons/plus.svg?react'
+import MinusIcon from '@/shared/assets/icons/minus.svg?react'
+import { IconButton } from '@/shared/ui'
+import styles from './ShapeEditor.module.scss'
+
+interface ShapeEditorProps {
+  value: Geometry | null
+  onChange: (geometry: Geometry | null) => void
+}
+
+const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
+
+export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
+  const {
+    state,
+    dispatch,
+    viewBox,
+    manualViewBox,
+    svgRef,
+    canClose,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleWheel,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+  } = useShapeEditor(value, onChange)
+  const { getVertexHandlers } = useVertexDrag({ dispatch, svgRef, viewBox })
+
+  const readout = formatReadout(state)
+  const contourPoints = state.status === 'closed' ? [...state.points, state.points[0]!] : state.points
+
+  return (
+    <div className={styles.root}>
+      <svg
+        ref={svgRef}
+        className={styles.canvas}
+        viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
+        role="img"
+        aria-label="Редактор геометрии куска"
+        data-testid="shape-editor-canvas"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
+      >
+        <defs>
+          <pattern id="grid-minor" width={GRID_STEP_MM} height={GRID_STEP_MM} patternUnits="userSpaceOnUse">
+            <circle cx={0} cy={0} r={0.4} className={styles.gridMinorDot} />
+          </pattern>
+          <pattern id="grid-major" width={GRID_MAJOR_STEP_MM} height={GRID_MAJOR_STEP_MM} patternUnits="userSpaceOnUse">
+            <path d={`M ${GRID_MAJOR_STEP_MM} 0 L 0 0 0 ${GRID_MAJOR_STEP_MM}`} className={styles.gridMajorLine} />
+          </pattern>
+        </defs>
+        <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-minor)" />
+        <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#grid-major)" />
+        {state.points.length >= 2 ? (
+          <polyline
+            className={clsx(styles.contour, state.intersecting && styles.contourInvalid)}
+            points={contourPoints.map((point) => `${point.x},${point.y}`).join(' ')}
+          />
+        ) : null}
+        {state.status === 'closed' ? (
+          <polygon className={styles.fill} points={state.points.map((point) => `${point.x},${point.y}`).join(' ')} />
+        ) : null}
+        {state.points.map((point, index) => (
+          <circle
+            key={index}
+            data-testid={`shape-editor-vertex-${index}`}
+            className={clsx(styles.vertex, state.intersecting && styles.vertexInvalid)}
+            cx={point.x}
+            cy={point.y}
+            r={4}
+            {...getVertexHandlers(index)}
+          />
+        ))}
+      </svg>
+      <p className={styles.readout}>{readout}</p>
+      <div className={styles.toolbar}>
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          data-testid="shape-editor-undo"
+          disabled={state.points.length === 0}
+          onClick={() => dispatch({ type: 'last-point-undone' })}
+        >
+          Назад
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          data-testid="shape-editor-clear"
+          disabled={state.points.length === 0}
+          onClick={() => dispatch({ type: 'cleared' })}
+        >
+          Очистить
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          data-testid="shape-editor-close"
+          disabled={!canClose}
+          onClick={() => dispatch({ type: 'closed-by-button' })}
+        >
+          Замкнуть
+        </button>
         <IconButton
           icon={PlusIcon}
           label="Приблизить"
           data-testid="shape-editor-zoom-in"
           className={styles.toolbarButton}
-          onClick={() => applyZoom(ZOOM_STEP_FACTOR)}
+          onClick={zoomIn}
         />
         <IconButton
           icon={MinusIcon}
           label="Отдалить"
           data-testid="shape-editor-zoom-out"
           className={styles.toolbarButton}
-          onClick={() => applyZoom(1 / ZOOM_STEP_FACTOR)}
+          onClick={zoomOut}
         />
         <button
           type="button"
           className={styles.toolbarButton}
           data-testid="shape-editor-fit"
           disabled={manualViewBox === null}
-          onClick={() => setManualViewBox(null)}
+          onClick={resetZoom}
         >
           По размеру
         </button>
+      </div>
+    </div>
+  )
+}
 ```
-
-Add imports: `import PlusIcon from '@/shared/assets/icons/plus.svg?react'`, `import MinusIcon from '@/shared/assets/icons/minus.svg?react'`, `import { IconButton } from '@/shared/ui'`. Extend the existing `import type { PointerEvent as ReactPointerEvent } from 'react'` line (from Task 8) to also bring in `WheelEvent`: `import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react'` — modify that one line in place, do not add a second `import type ... from 'react'` statement (duplicate named imports from the same module is a compile error).
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `pnpm vitest run src/features/shape-editor/ui/ShapeEditor`
+Run: `pnpm vitest run src/features/shape-editor`
 Expected: PASS, all tests from Tasks 7–11 green.
 
 - [ ] **Step 5: Commit**
