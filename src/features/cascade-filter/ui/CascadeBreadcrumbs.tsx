@@ -3,6 +3,7 @@ import { useGetUnitsQuery } from '@/entities/refrigeration-unit'
 import { useGetAssembliesForUnitQuery } from '@/entities/assembly'
 import { useGetPartsForAssemblyQuery } from '@/entities/part'
 import { useCascadeFilter } from '../model/useCascadeFilter'
+import { filterChildren } from '../lib/filterChildren'
 import styles from './CascadeBreadcrumbs.module.scss'
 
 interface CascadeBreadcrumbsProps {
@@ -17,8 +18,11 @@ export const CascadeBreadcrumbs = ({ includeArchived }: CascadeBreadcrumbsProps)
   const { unitId, assemblyId, partId, selectUnit, selectAssembly, selectPart } = useCascadeFilter()
 
   const { data: units = [] } = useGetUnitsQuery({ includeArchived })
-  const { data: assemblies = [] } = useGetAssembliesForUnitQuery(unitId ?? skipToken)
-  const { data: parts = [] } = useGetPartsForAssemblyQuery(assemblyId ?? skipToken)
+  const { data: unitAssemblies = [] } = useGetAssembliesForUnitQuery(unitId ?? skipToken)
+  const { data: assemblyParts = [] } = useGetPartsForAssemblyQuery(assemblyId ?? skipToken)
+
+  const assemblies = filterChildren(unitAssemblies, '', includeArchived)
+  const parts = filterChildren(assemblyParts, '', includeArchived)
 
   if (!unitId) return null
 
