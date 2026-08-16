@@ -8,6 +8,8 @@ import PlusIcon from '@/shared/assets/icons/plus.svg?react'
 import MinusIcon from '@/shared/assets/icons/minus.svg?react'
 import { IconButton } from '@/shared/ui'
 import { ShapeEditorVertex } from './ShapeEditorVertex'
+import { segmentLabel } from '../lib/segmentLabel'
+import { SideLengthLabel } from './SideLengthLabel'
 import styles from './ShapeEditor.module.scss'
 
 interface ShapeEditorProps {
@@ -32,6 +34,8 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
     canClose,
     vertexRadiusMm,
     vertexHitRadiusMm,
+    labelFontSizeMm,
+    labelOffsetMm,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -91,6 +95,19 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
               onHandlePointerDown={handlers.onPointerDown}
               onHandlePointerMove={handlers.onPointerMove}
               onHandlePointerUp={handlers.onPointerUp}
+            />
+          )
+        })}
+        {contourPoints.slice(0, -1).map((point, index) => {
+          const next = contourPoints[index + 1]!
+          const label = segmentLabel(point, next, labelOffsetMm)
+          if (!label) return null
+          return (
+            <SideLengthLabel
+              key={index}
+              label={label}
+              fontSizeMm={labelFontSizeMm}
+              testId={`shape-editor-side-label-${index}`}
             />
           )
         })}

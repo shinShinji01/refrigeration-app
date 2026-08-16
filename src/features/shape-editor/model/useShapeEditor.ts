@@ -25,6 +25,8 @@ const MAX_VIEWBOX_SIZE_MM = 20_000
 const DEFAULT_CANVAS_PIXEL_SIZE = 360
 const VERTEX_VISIBLE_RADIUS_PX = 6
 const VERTEX_HIT_RADIUS_PX = 22 // диаметр 44px — тач-таргет, CLAUDE.md
+const LABEL_FONT_SIZE_PX = 11
+const LABEL_OFFSET_PX = 14
 
 export interface UseShapeEditorResult {
   state: EditorState
@@ -35,6 +37,8 @@ export interface UseShapeEditorResult {
   canClose: boolean
   vertexRadiusMm: number
   vertexHitRadiusMm: number
+  labelFontSizeMm: number
+  labelOffsetMm: number
   handlePointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void
   handlePointerMove: (event: ReactPointerEvent<SVGSVGElement>) => void
   handlePointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void
@@ -100,6 +104,8 @@ export const useShapeEditor = (
   const mmPerPx = viewBox.width / canvasPixelSize
   const vertexRadiusMm = VERTEX_VISIBLE_RADIUS_PX * mmPerPx
   const vertexHitRadiusMm = VERTEX_HIT_RADIUS_PX * mmPerPx
+  const labelFontSizeMm = LABEL_FONT_SIZE_PX * mmPerPx
+  const labelOffsetMm = LABEL_OFFSET_PX * mmPerPx
 
   const applyZoom = (factor: number) => {
     const base = manualViewBox ?? autoViewBox
@@ -179,6 +185,8 @@ export const useShapeEditor = (
     canClose: state.points.length >= 3,
     vertexRadiusMm,
     vertexHitRadiusMm,
+    labelFontSizeMm,
+    labelOffsetMm,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

@@ -57,6 +57,14 @@
   fill: transparent;
 }
 
+.sideLabel {
+  fill: $color-text-muted;
+  font-family: $font-family-mono;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  user-select: none;
+}
+
 .readout {
   @include tabular-nums;
 

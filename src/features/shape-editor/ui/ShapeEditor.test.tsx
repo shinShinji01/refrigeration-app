@@ -282,3 +282,37 @@ describe('ShapeEditor — постоянный размер маркеров в�
     expect(getComputedStyle(visible).pointerEvents).toBe('none')
   })
 })
+
+describe('ShapeEditor — подписи длины сторон', () => {
+  it('замкнутый прямоугольник — 4 подписи по 100мм', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={vi.fn()} />)
+
+    const labels = screen.getAllByTestId(/shape-editor-side-label-/)
+    expect(labels).toHaveLength(4)
+    labels.forEach((label) => expect(label).toHaveTextContent('100мм'))
+  })
+
+  it('во время рисования — подписи только у уже поставленных сторон, не у замыкающей', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    // те же клики, что и в "три клика + замыкание кнопкой" выше — 3 точки, ещё не замкнуто
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 200 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 200 })
+
+    // 3 точки, не замкнуто -> 2 стороны (между 1-2 и 2-3), не 3
+    expect(screen.getAllByTestId(/shape-editor-side-label-/)).toHaveLength(2)
+  })
+
+  it('пустой канвас — подписей нет', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    expect(screen.queryAllByTestId(/shape-editor-side-label-/)).toHaveLength(0)
+  })
+})
