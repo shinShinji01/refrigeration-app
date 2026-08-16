@@ -1,0 +1,121 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.canvas {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 360px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
+  touch-action: none; // жесты (pinch/drag) обрабатываются самим редактором, не браузером
+}
+
+.gridMinorDot {
+  fill: $color-graphite-100;
+}
+
+.gridMajorLine {
+  fill: none;
+  stroke: $color-graphite-100;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.contour {
+  fill: none;
+  stroke: $color-accent-cyan;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.contourInvalid {
+  stroke: $color-red;
+}
+
+.fill {
+  fill: $color-accent-cyan-muted;
+  stroke: none;
+}
+
+.vertex {
+  fill: $color-accent-cyan;
+  stroke: $color-white;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none; // весь drag — на .vertexHandle под ним
+}
+
+.vertexInvalid {
+  fill: $color-red;
+}
+
+.vertexHandle {
+  fill: transparent;
+}
+
+.sideLabel {
+  @include tabular-nums;
+
+  fill: $color-text-muted;
+  font-family: $font-family-mono;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  user-select: none;
+  pointer-events: none; // не перехватывает драг ручек вершин под собой
+}
+
+.previewLine {
+  fill: none;
+  stroke: $color-accent-cyan;
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  opacity: 0.6;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none; // не перехватывает драг ручек вершин под собой
+}
+
+.readout {
+  @include tabular-nums;
+
+  font-family: $font-family-mono;
+  font-size: 0.875rem;
+  color: $color-text-muted;
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  gap: $space-2;
+  flex-wrap: wrap;
+}
+
+.toolbarButton {
+  @include touch-target;
+  @include tap-feedback;
+
+  padding: 0 $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-bg;
+  color: $color-text;
+  font-size: 0.875rem;
+
+  &:disabled {
+    color: $color-text-disabled;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+@include reduced-motion {
+  .toolbarButton {
+    transition: none;
+  }
+}
