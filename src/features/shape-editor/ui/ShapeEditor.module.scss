@@ -56,3 +56,36 @@
   color: $color-text-muted;
   margin: 0;
 }
+
+.toolbar {
+  display: flex;
+  gap: $space-2;
+  flex-wrap: wrap;
+}
+
+.toolbarButton {
+  @include touch-target;
+  @include tap-feedback;
+
+  padding: 0 $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-bg;
+  color: $color-text;
+  font-size: 0.875rem;
+
+  &:disabled {
+    color: $color-text-disabled;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+@include reduced-motion {
+  .toolbarButton {
+    transition: none;
+  }
+}

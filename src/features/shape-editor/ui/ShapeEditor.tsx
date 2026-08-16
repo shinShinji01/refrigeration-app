@@ -18,18 +18,20 @@ interface ShapeEditorProps {
 const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
 
 export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
-  const { state, viewBox } = useShapeEditor(value, onChange)
+  const { state, dispatch, viewBox, svgRef, canClose, handleCanvasClick } = useShapeEditor(value, onChange)
   const readout = formatReadout(state)
   const contourPoints = state.status === 'closed' ? [...state.points, state.points[0]!] : state.points
 
   return (
     <div className={styles.root}>
       <svg
+        ref={svgRef}
         className={styles.canvas}
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
         role="img"
         aria-label="Редактор геометрии куска"
         data-testid="shape-editor-canvas"
+        onClick={handleCanvasClick}
       >
         <defs>
           <pattern id="grid-minor" width={GRID_STEP_MM} height={GRID_STEP_MM} patternUnits="userSpaceOnUse">
@@ -62,6 +64,35 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
         ))}
       </svg>
       <p className={styles.readout}>{readout}</p>
+      <div className={styles.toolbar}>
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          data-testid="shape-editor-undo"
+          disabled={state.points.length === 0}
+          onClick={() => dispatch({ type: 'last-point-undone' })}
+        >
+          Назад
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          data-testid="shape-editor-clear"
+          disabled={state.points.length === 0}
+          onClick={() => dispatch({ type: 'cleared' })}
+        >
+          Очистить
+        </button>
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          data-testid="shape-editor-close"
+          disabled={!canClose}
+          onClick={() => dispatch({ type: 'closed-by-button' })}
+        >
+          Замкнуть
+        </button>
+      </div>
     </div>
   )
 }

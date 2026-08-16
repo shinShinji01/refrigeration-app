@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { Geometry } from '@/shared/lib/geometry'
 import {
   editorReducer,
@@ -10,11 +11,16 @@ import {
 } from '../lib/editorReducer'
 import { fitScale, type ViewBox } from '../lib/fitScale'
 import { boundsOfPoints } from '../lib/boundsOfPoints'
+import { clientToMm } from '../lib/clientToMm'
+import { snapToGrid } from '../lib/snapToGrid'
 
 export interface UseShapeEditorResult {
   state: EditorState
   dispatch: (action: EditorAction) => void
   viewBox: ViewBox
+  svgRef: React.RefObject<SVGSVGElement | null>
+  canClose: boolean
+  handleCanvasClick: (event: ReactPointerEvent<SVGSVGElement>) => void
 }
 
 export const useShapeEditor = (
@@ -24,6 +30,7 @@ export const useShapeEditor = (
   const [state, dispatch] = useReducer(editorReducer, value, initEditorState)
   const lastSyncedValueRef = useRef<Geometry | null>(value)
   const lastEmittedRef = useRef<Geometry | null>(geometryFromState(state))
+  const svgRef = useRef<SVGSVGElement>(null)
 
   // Внешнее изменение value (другой кусок, сброс формы) — синхронизируем
   // внутреннее состояние. Сравнение по ссылке отличает «нас попросили
@@ -48,5 +55,13 @@ export const useShapeEditor = (
   const bounds = useMemo(() => boundsOfPoints(state.points), [state.points])
   const viewBox = useMemo(() => fitScale(bounds), [bounds])
 
-  return { state, dispatch, viewBox }
+  const handleCanvasClick = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (state.status === 'closed') return
+    const svg = svgRef.current
+    if (!svg) return
+    const point = snapToGrid(clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox))
+    dispatch({ type: 'point-added', point })
+  }
+
+  return { state, dispatch, viewBox, svgRef, canClose: state.points.length >= 3, handleCanvasClick }
 }
