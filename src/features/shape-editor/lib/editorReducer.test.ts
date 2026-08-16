@@ -214,6 +214,19 @@ describe('editorReducer — vertex-moved', () => {
     expect(state.status).toBe('closed')
     expect(state.intersecting).toBe(true)
   })
+
+  it('vertex-moved в состоянии drawing — no-op (не форсирует closed с <3 точек)', () => {
+    const drawing: EditorState = {
+      points: [{ x: 0, y: 0 }, { x: 10, y: 0 }],
+      status: 'drawing',
+      intersecting: false,
+    }
+    expect(editorReducer(drawing, { type: 'vertex-moved', index: 0, point: { x: 5, y: 5 } })).toBe(drawing)
+  })
+
+  it('vertex-moved в состоянии empty — no-op', () => {
+    expect(editorReducer(EMPTY, { type: 'vertex-moved', index: 0, point: { x: 5, y: 5 } })).toBe(EMPTY)
+  })
 })
 
 describe('editorReducer — value-synced', () => {

@@ -53,6 +53,12 @@ export const editorReducer = (state: EditorState, action: EditorAction): EditorS
         first.y === action.point.y
       if (isClosingTap) return closeIfValid(state.points)
       const newPoints = [...state.points, action.point]
+      // Пересчитываем intersecting эагерно при каждом добавлении точки (не только
+      // в момент явного замыкания) — это даёт живую подсказку «замкнётся ли контур
+      // без самопересечения прямо сейчас». Отклонение от буквального сниппета брифа
+      // (там `intersecting: false`) необходимо: тест «замыкание в самопересекающийся
+      // контур» тапает не в points[0], попадает в эту ветку, и с хардкодом false
+      // не прошёл бы. Учитывайте это поведение в задачах 7-11.
       return { points: newPoints, status: 'drawing', intersecting: hasSelfIntersection(newPoints) }
     }
     case 'closed-by-button': {
@@ -82,6 +88,10 @@ export const editorReducer = (state: EditorState, action: EditorAction): EditorS
     case 'cleared':
       return state.points.length === 0 ? state : { points: [], status: 'empty', intersecting: false }
     case 'vertex-moved': {
+      // Защита инварианта «closed ⇒ ≥3 точек»: перемещение вершины имеет смысл
+      // только для уже замкнутого контура. Если состояние 'empty' или 'drawing',
+      // игнорируем действие вместо того, чтобы принудительно выставлять 'closed'.
+      if (state.status !== 'closed') return state
       const points = state.points.map((point, index) => (index === action.index ? action.point : point))
       return { points, status: 'closed', intersecting: hasSelfIntersection(points) }
     }
