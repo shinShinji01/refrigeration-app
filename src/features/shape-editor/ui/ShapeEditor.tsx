@@ -36,9 +36,11 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
     vertexHitRadiusMm,
     labelFontSizeMm,
     labelOffsetMm,
+    hoverPointMm,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
+    handlePointerLeave,
     handleWheel,
     zoomIn,
     zoomOut,
@@ -61,6 +63,7 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
         onWheel={handleWheel}
       >
         <defs>
@@ -111,6 +114,31 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
             />
           )
         })}
+        {state.status === 'drawing' && state.points.length > 0 && hoverPointMm ? (
+          (() => {
+            const lastPoint = state.points[state.points.length - 1]!
+            const preview = segmentLabel(lastPoint, hoverPointMm, labelOffsetMm)
+            return (
+              <>
+                <line
+                  data-testid="shape-editor-preview-line"
+                  className={styles.previewLine}
+                  x1={lastPoint.x}
+                  y1={lastPoint.y}
+                  x2={hoverPointMm.x}
+                  y2={hoverPointMm.y}
+                />
+                {preview ? (
+                  <SideLengthLabel
+                    label={preview}
+                    fontSizeMm={labelFontSizeMm}
+                    testId="shape-editor-preview-label"
+                  />
+                ) : null}
+              </>
+            )
+          })()
+        ) : null}
       </svg>
       <p className={styles.readout}>{readout}</p>
       <div className={styles.toolbar}>

@@ -316,3 +316,73 @@ describe('ShapeEditor — подписи длины сторон', () => {
     expect(screen.queryAllByTestId(/shape-editor-side-label-/)).toHaveLength(0)
   })
 })
+
+describe('ShapeEditor — превью-линия при рисовании (мышь)', () => {
+  it('движение мыши после первой точки рисует превью-линию и подпись длины', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    expect(screen.queryByTestId('shape-editor-preview-line')).not.toBeInTheDocument()
+
+    fireEvent.pointerMove(canvas, { clientX: 200, clientY: 30, pointerType: 'mouse' })
+
+    expect(screen.getByTestId('shape-editor-preview-line')).toBeInTheDocument()
+    expect(screen.getByTestId('shape-editor-preview-label')).toHaveTextContent(/^\d+мм$/)
+  })
+
+  it('превью-линия реагирует на новое положение мыши', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+
+    fireEvent.pointerMove(canvas, { clientX: 150, clientY: 30, pointerType: 'mouse' })
+    const firstX2 = screen.getByTestId('shape-editor-preview-line').getAttribute('x2')
+
+    fireEvent.pointerMove(canvas, { clientX: 250, clientY: 30, pointerType: 'mouse' })
+    const secondX2 = screen.getByTestId('shape-editor-preview-line').getAttribute('x2')
+
+    expect(secondX2).not.toBe(firstX2)
+  })
+
+  it('на touch превью-линия не рисуется', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerMove(canvas, { clientX: 200, clientY: 30, pointerType: 'touch' })
+
+    expect(screen.queryByTestId('shape-editor-preview-line')).not.toBeInTheDocument()
+  })
+
+  it('уход курсора с канваса убирает превью-линию', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerMove(canvas, { clientX: 200, clientY: 30, pointerType: 'mouse' })
+    expect(screen.getByTestId('shape-editor-preview-line')).toBeInTheDocument()
+
+    fireEvent.pointerLeave(canvas)
+    expect(screen.queryByTestId('shape-editor-preview-line')).not.toBeInTheDocument()
+  })
+
+  it('на замкнутом контуре превью-линия не рисуется, даже если мышь двигалась раньше', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerMove(canvas, { clientX: 200, clientY: 30, pointerType: 'mouse' })
+
+    expect(screen.queryByTestId('shape-editor-preview-line')).not.toBeInTheDocument()
+  })
+})

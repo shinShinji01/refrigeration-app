@@ -65,6 +65,15 @@
   user-select: none;
 }
 
+.previewLine {
+  fill: none;
+  stroke: $color-accent-cyan;
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  opacity: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+
 .readout {
   @include tabular-nums;
 

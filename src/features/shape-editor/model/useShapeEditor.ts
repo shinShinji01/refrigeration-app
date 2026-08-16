@@ -39,9 +39,11 @@ export interface UseShapeEditorResult {
   vertexHitRadiusMm: number
   labelFontSizeMm: number
   labelOffsetMm: number
+  hoverPointMm: Point | null
   handlePointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void
   handlePointerMove: (event: ReactPointerEvent<SVGSVGElement>) => void
   handlePointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handlePointerLeave: () => void
   handleWheel: (event: ReactWheelEvent<SVGSVGElement>) => void
   zoomIn: () => void
   zoomOut: () => void
@@ -124,6 +126,7 @@ export const useShapeEditor = (
   const dragStartRef = useRef<Point | null>(null)
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
   const pinchStartDistanceRef = useRef<number | null>(null)
+  const [hoverPointMm, setHoverPointMm] = useState<Point | null>(null)
 
   const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
@@ -140,6 +143,18 @@ export const useShapeEditor = (
   }
 
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
+    // Живая линия-превью — только мышь: на touch нет hover до касания, и
+    // отдельный touch-жест «драг перед отпусканием» сознательно не делаем
+    // (docs/superpowers/specs/2026-08-16-shape-editor-measurements-design.md).
+    // Не завязана на activePointersRef — обычный hover-move без
+    // предшествующего pointerdown тоже должен обновлять превью.
+    if (event.pointerType === 'mouse' && state.status !== 'closed' && activePointersRef.current.size < 2) {
+      const svg = svgRef.current
+      if (svg) {
+        setHoverPointMm(snapToGrid(clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)))
+      }
+    }
+
     if (!activePointersRef.current.has(event.pointerId)) return
     activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (activePointersRef.current.size !== 2 || pinchStartDistanceRef.current === null) return
@@ -176,6 +191,8 @@ export const useShapeEditor = (
     dispatch({ type: 'point-added', point: snapToGrid(end) })
   }
 
+  const handlePointerLeave = () => setHoverPointMm(null)
+
   return {
     state,
     dispatch,
@@ -187,9 +204,11 @@ export const useShapeEditor = (
     vertexHitRadiusMm,
     labelFontSizeMm,
     labelOffsetMm,
+    hoverPointMm,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
+    handlePointerLeave,
     handleWheel,
     zoomIn: () => applyZoom(ZOOM_STEP_FACTOR),
     zoomOut: () => applyZoom(1 / ZOOM_STEP_FACTOR),
