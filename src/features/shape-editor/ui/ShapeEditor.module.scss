@@ -46,10 +46,15 @@
   stroke: $color-white;
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
+  pointer-events: none; // весь drag — на .vertexHandle под ним
 }
 
 .vertexInvalid {
   fill: $color-red;
+}
+
+.vertexHandle {
+  fill: transparent;
 }
 
 .readout {

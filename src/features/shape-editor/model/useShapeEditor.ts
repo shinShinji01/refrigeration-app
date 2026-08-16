@@ -18,6 +18,14 @@ const ZOOM_STEP_FACTOR = 1.25
 const MIN_VIEWBOX_SIZE_MM = 20
 const MAX_VIEWBOX_SIZE_MM = 20_000
 
+// Реальная ширина канваса в px — CSS даёт только max-width:360px, на телефоне
+// контейнер часто уже. Нужна, чтобы маркеры вершин имели постоянный размер на
+// экране при любом зуме/размере фигуры, а не фиксированный размер в мм чертежа
+// (см. docs/superpowers/specs/2026-08-16-shape-editor-measurements-design.md).
+const DEFAULT_CANVAS_PIXEL_SIZE = 360
+const VERTEX_VISIBLE_RADIUS_PX = 6
+const VERTEX_HIT_RADIUS_PX = 22 // диаметр 44px — тач-таргет, CLAUDE.md
+
 export interface UseShapeEditorResult {
   state: EditorState
   dispatch: (action: EditorAction) => void
@@ -25,6 +33,8 @@ export interface UseShapeEditorResult {
   manualViewBox: ViewBox | null
   svgRef: React.RefObject<SVGSVGElement | null>
   canClose: boolean
+  vertexRadiusMm: number
+  vertexHitRadiusMm: number
   handlePointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void
   handlePointerMove: (event: ReactPointerEvent<SVGSVGElement>) => void
   handlePointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void
@@ -42,6 +52,18 @@ export const useShapeEditor = (
   const lastSyncedValueRef = useRef<Geometry | null>(value)
   const lastEmittedRef = useRef<Geometry | null>(geometryFromState(state))
   const svgRef = useRef<SVGSVGElement>(null)
+
+  const [canvasPixelSize, setCanvasPixelSize] = useState(DEFAULT_CANVAS_PIXEL_SIZE)
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width
+      if (width) setCanvasPixelSize(width)
+    })
+    observer.observe(svg)
+    return () => observer.disconnect()
+  }, [])
 
   // Внешнее изменение value (другой кусок, сброс формы) — синхронизируем
   // внутреннее состояние. Сравнение по ссылке отличает «нас попросили
@@ -74,6 +96,10 @@ export const useShapeEditor = (
   const autoViewBox = useMemo(() => fitScale(bounds), [bounds])
   const [manualViewBox, setManualViewBox] = useState<ViewBox | null>(null)
   const viewBox = manualViewBox ?? autoViewBox
+
+  const mmPerPx = viewBox.width / canvasPixelSize
+  const vertexRadiusMm = VERTEX_VISIBLE_RADIUS_PX * mmPerPx
+  const vertexHitRadiusMm = VERTEX_HIT_RADIUS_PX * mmPerPx
 
   const applyZoom = (factor: number) => {
     const base = manualViewBox ?? autoViewBox
@@ -151,6 +177,8 @@ export const useShapeEditor = (
     manualViewBox,
     svgRef,
     canClose: state.points.length >= 3,
+    vertexRadiusMm,
+    vertexHitRadiusMm,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

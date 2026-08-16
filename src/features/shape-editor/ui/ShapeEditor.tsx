@@ -7,6 +7,7 @@ import { GRID_STEP_MM } from '../lib/snapToGrid'
 import PlusIcon from '@/shared/assets/icons/plus.svg?react'
 import MinusIcon from '@/shared/assets/icons/minus.svg?react'
 import { IconButton } from '@/shared/ui'
+import { ShapeEditorVertex } from './ShapeEditorVertex'
 import styles from './ShapeEditor.module.scss'
 
 interface ShapeEditorProps {
@@ -29,6 +30,8 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
     manualViewBox,
     svgRef,
     canClose,
+    vertexRadiusMm,
+    vertexHitRadiusMm,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -75,22 +78,22 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
         {state.status === 'closed' ? (
           <polygon className={styles.fill} points={state.points.map((point) => `${point.x},${point.y}`).join(' ')} />
         ) : null}
-        {state.points.map((point, index) => (
-          <circle
-            key={index}
-            data-testid={`shape-editor-vertex-${index}`}
-            className={clsx(styles.vertex, state.intersecting && styles.vertexInvalid)}
-            cx={point.x}
-            cy={point.y}
-            // r={4}мм ≈ 11-22px на экране — меньше гайдлайна CLAUDE.md в 44px тач-таргета.
-            // Оставлено как есть: pointer capture (см. useVertexDrag.ts) снимает риск потери
-            // драга при промахе мимо кружка. Увеличение самой зоны попадания — известная
-            // отложенная доработка (не привязана к конкретной задаче плана): она завязана на
-            // мм→px пересчёт, который меняется с зумом (см. applyZoom в useShapeEditor.ts).
-            r={4}
-            {...getVertexHandlers(index)}
-          />
-        ))}
+        {state.points.map((point, index) => {
+          const handlers = getVertexHandlers(index)
+          return (
+            <ShapeEditorVertex
+              key={index}
+              point={point}
+              index={index}
+              radiusMm={vertexRadiusMm}
+              hitRadiusMm={vertexHitRadiusMm}
+              invalid={state.intersecting}
+              onHandlePointerDown={handlers.onPointerDown}
+              onHandlePointerMove={handlers.onPointerMove}
+              onHandlePointerUp={handlers.onPointerUp}
+            />
+          )
+        })}
       </svg>
       <p className={styles.readout}>{readout}</p>
       <div className={styles.toolbar}>

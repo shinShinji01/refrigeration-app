@@ -180,7 +180,7 @@ describe('ShapeEditor — редактирование вершины', () => {
     const onChange = vi.fn()
     render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={onChange} />)
 
-    const vertex1 = screen.getByTestId('shape-editor-vertex-1') // {x:100,y:0}
+    const vertex1 = screen.getByTestId('shape-editor-handle-1') // {x:100,y:0}
 
     fireEvent.pointerDown(vertex1, { clientX: 0, clientY: 0 })
     fireEvent.pointerMove(vertex1, { clientX: 50, clientY: 20 })
@@ -197,7 +197,7 @@ describe('ShapeEditor — редактирование вершины', () => {
     render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={onChange} />)
     onChange.mockClear()
 
-    const vertex0 = screen.getByTestId('shape-editor-vertex-0') // {x:0,y:0}
+    const vertex0 = screen.getByTestId('shape-editor-handle-0') // {x:0,y:0}
     // Брифовые clientX:300,clientY:300 маппятся через clientToMm в mm (95,95) —
     // это НЕ самопересекающийся контур (точка (95,95) не выходит за пределы старого
     // прямоугольника настолько, чтобы рёбра пересеклись). Подобранные ниже координаты
@@ -255,5 +255,30 @@ describe('ShapeEditor — zoom', () => {
     fireEvent.wheel(canvas, { deltaY: -100 })
 
     expect(canvas.getAttribute('viewBox')).not.toBe(before)
+  })
+})
+
+describe('ShapeEditor — постоянный размер маркеров вершин', () => {
+  it('видимый кружок и невидимая тач-зона имеют разный радиус, посчитанный из viewBox', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={vi.fn()} />)
+
+    // bounds 0..100 -> content зажат в MIN_CONTENT_SIZE_MM(20) не нужен (100>20),
+    // size = 100*1.3 = 130, viewBox.width = 130, canvasPixelSize = 360 (мок)
+    // mmPerPx = 130/360 = 0.3611...
+    const visible = screen.getByTestId('shape-editor-vertex-0')
+    const handle = screen.getByTestId('shape-editor-handle-0')
+
+    expect(Number(visible.getAttribute('r'))).toBeCloseTo(6 * (130 / 360), 1)
+    expect(Number(handle.getAttribute('r'))).toBeCloseTo(22 * (130 / 360), 1)
+    expect(Number(handle.getAttribute('r'))).toBeGreaterThan(Number(visible.getAttribute('r')))
+  })
+
+  it('видимый кружок не перехватывает pointer-события (pointer-events: none)', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={vi.fn()} />)
+
+    const visible = screen.getByTestId('shape-editor-vertex-0')
+    expect(getComputedStyle(visible).pointerEvents).toBe('none')
   })
 })

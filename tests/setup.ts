@@ -9,3 +9,16 @@ import '@testing-library/jest-dom/vitest'
 afterEach(() => {
   cleanup()
 })
+
+// jsdom не реализует ResizeObserver — features/shape-editor использует его
+// для постоянного на экране размера маркеров вершин (см.
+// docs/superpowers/specs/2026-08-16-shape-editor-measurements-design.md).
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (!('ResizeObserver' in globalThis)) {
+  globalThis.ResizeObserver = ResizeObserverMock
+}
