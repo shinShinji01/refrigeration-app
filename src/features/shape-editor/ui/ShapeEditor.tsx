@@ -95,6 +95,7 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
               radiusMm={vertexRadiusMm}
               hitRadiusMm={vertexHitRadiusMm}
               invalid={state.intersecting}
+              draggable={state.status === 'closed'}
               onHandlePointerDown={handlers.onPointerDown}
               onHandlePointerMove={handlers.onPointerMove}
               onHandlePointerUp={handlers.onPointerUp}

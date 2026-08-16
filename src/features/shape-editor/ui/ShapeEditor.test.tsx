@@ -211,6 +211,34 @@ describe('ShapeEditor — редактирование вершины', () => {
     // как это делает сам компонент.
     expect(screen.getByTestId('shape-editor-canvas').querySelector('polyline')).toHaveClass(styles.contourInvalid!)
   })
+
+  it('во время рисования (status=drawing) ручка драга вершины не рендерится — тап рядом не двигает точку и не падает', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    // две точки — контур ещё 'drawing', меньше 3 точек
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 30 })
+
+    expect(screen.queryByTestId('shape-editor-handle-0')).not.toBeInTheDocument()
+
+    const vertex0 = screen.getByTestId('shape-editor-vertex-0')
+    const before = { cx: vertex0.getAttribute('cx'), cy: vertex0.getAttribute('cy') }
+
+    // тап в области, где раньше была бы ручка драга — не должен падать и не должен
+    // сдвинуть вершину, событие проваливается на канвас (ставит новую точку контура)
+    expect(() => {
+      fireEvent.pointerDown(vertex0, { clientX: 30, clientY: 30 })
+      fireEvent.pointerMove(vertex0, { clientX: 50, clientY: 50 })
+      fireEvent.pointerUp(vertex0, { clientX: 50, clientY: 50 })
+    }).not.toThrow()
+
+    expect(screen.getByTestId('shape-editor-vertex-0').getAttribute('cx')).toBe(before.cx)
+    expect(screen.getByTestId('shape-editor-vertex-0').getAttribute('cy')).toBe(before.cy)
+  })
 })
 
 describe('ShapeEditor — zoom', () => {
