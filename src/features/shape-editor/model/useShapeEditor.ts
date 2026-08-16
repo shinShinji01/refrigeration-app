@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import type { Geometry } from '@/shared/lib/geometry'
+import type { Geometry, Point } from '@/shared/lib/geometry'
 import {
   editorReducer,
   geometryEquals,
@@ -12,7 +12,7 @@ import {
 import { fitScale, type ViewBox } from '../lib/fitScale'
 import { boundsOfPoints } from '../lib/boundsOfPoints'
 import { clientToMm } from '../lib/clientToMm'
-import { snapToGrid } from '../lib/snapToGrid'
+import { GRID_STEP_MM, snapToGrid } from '../lib/snapToGrid'
 
 export interface UseShapeEditorResult {
   state: EditorState
@@ -20,7 +20,8 @@ export interface UseShapeEditorResult {
   viewBox: ViewBox
   svgRef: React.RefObject<SVGSVGElement | null>
   canClose: boolean
-  handleCanvasClick: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handlePointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handlePointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void
 }
 
 export const useShapeEditor = (
@@ -55,13 +56,36 @@ export const useShapeEditor = (
   const bounds = useMemo(() => boundsOfPoints(state.points), [state.points])
   const viewBox = useMemo(() => fitScale(bounds), [bounds])
 
-  const handleCanvasClick = (event: ReactPointerEvent<SVGSVGElement>) => {
+  const dragStartRef = useRef<Point | null>(null)
+
+  const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (state.status === 'closed') return
     const svg = svgRef.current
     if (!svg) return
-    const point = snapToGrid(clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox))
-    dispatch({ type: 'point-added', point })
+    dragStartRef.current = clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)
   }
 
-  return { state, dispatch, viewBox, svgRef, canClose: state.points.length >= 3, handleCanvasClick }
+  const handlePointerUp = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (state.status === 'closed') {
+      dragStartRef.current = null
+      return
+    }
+    const start = dragStartRef.current
+    dragStartRef.current = null
+    if (!start) return
+    const svg = svgRef.current
+    if (!svg) return
+
+    const end = clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)
+    const distanceMm = Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y))
+    const isDrag = distanceMm >= GRID_STEP_MM
+
+    if (isDrag && state.points.length === 0) {
+      dispatch({ type: 'rect-drawn', corner1: snapToGrid(start), corner2: snapToGrid(end) })
+      return
+    }
+    dispatch({ type: 'point-added', point: snapToGrid(end) })
+  }
+
+  return { state, dispatch, viewBox, svgRef, canClose: state.points.length >= 3, handlePointerDown, handlePointerUp }
 }

@@ -61,9 +61,12 @@ describe('ShapeEditor — рисование многоугольника тап
 
     // viewBox для пустого состояния — DEFAULT_BOUNDS с 15% отступом:
     // x=-30 y=-30 width=260 height=260 (200*1.3), 1px канваса = 260/360 мм
-    fireEvent.click(canvas, { clientX: 30, clientY: 30 })
-    fireEvent.click(canvas, { clientX: 200, clientY: 30 })
-    fireEvent.click(canvas, { clientX: 200, clientY: 200 })
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 200 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 200 })
 
     expect(onChange).not.toHaveBeenCalled() // ещё не замкнут
 
@@ -80,8 +83,10 @@ describe('ShapeEditor — рисование многоугольника тап
     render(<ShapeEditor value={null} onChange={vi.fn()} />)
     const canvas = screen.getByTestId('shape-editor-canvas')
 
-    fireEvent.click(canvas, { clientX: 30, clientY: 30 })
-    fireEvent.click(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 30 })
     expect(screen.getAllByTestId(/shape-editor-vertex-/)).toHaveLength(2)
 
     fireEvent.click(screen.getByTestId('shape-editor-undo'))
@@ -104,8 +109,10 @@ describe('ShapeEditor — рисование многоугольника тап
     render(<ShapeEditor value={null} onChange={vi.fn()} />)
     const canvas = screen.getByTestId('shape-editor-canvas')
 
-    fireEvent.click(canvas, { clientX: 30, clientY: 30 })
-    fireEvent.click(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 30 })
 
     expect(screen.getByTestId('shape-editor-close')).toBeDisabled()
   })
@@ -115,8 +122,53 @@ describe('ShapeEditor — рисование многоугольника тап
     render(<ShapeEditor value={{ kind: 'rect', width: 10, height: 10 }} onChange={vi.fn()} />)
     const canvas = screen.getByTestId('shape-editor-canvas')
 
-    fireEvent.click(canvas, { clientX: 300, clientY: 300 })
+    fireEvent.pointerDown(canvas, { clientX: 300, clientY: 300 })
+    fireEvent.pointerUp(canvas, { clientX: 300, clientY: 300 })
 
     expect(screen.getAllByTestId(/shape-editor-vertex-/)).toHaveLength(4)
+  })
+})
+
+describe('ShapeEditor — прямоугольник драгом', () => {
+  it('драг из пустого состояния на пустом канвасе — сразу closed rect, один вызов onChange', () => {
+    mockCanvasRect()
+    const onChange = vi.fn()
+    render(<ShapeEditor value={null} onChange={onChange} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerMove(canvas, { clientX: 200, clientY: 100 })
+    fireEvent.pointerUp(canvas, { clientX: 200, clientY: 100 })
+
+    expect(screen.getAllByTestId(/shape-editor-vertex-/)).toHaveLength(4)
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange.mock.calls[0]![0].kind).toBe('rect')
+  })
+
+  it('короткий драг/тап (меньше шага сетки) — ведёт себя как обычный клик, ставит точку', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 31, clientY: 31 })
+
+    expect(screen.getAllByTestId(/shape-editor-vertex-/)).toHaveLength(1)
+  })
+
+  it('драг-шорткат недоступен, если уже есть хотя бы одна точка контура', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 31, clientY: 31 }) // первая точка тапом
+
+    fireEvent.pointerDown(canvas, { clientX: 100, clientY: 30 })
+    fireEvent.pointerMove(canvas, { clientX: 250, clientY: 150 })
+    fireEvent.pointerUp(canvas, { clientX: 250, clientY: 150 })
+
+    // второй жест — тоже просто точка (не rect), контур продолжает строиться тапами
+    expect(screen.getAllByTestId(/shape-editor-vertex-/)).toHaveLength(2)
   })
 })

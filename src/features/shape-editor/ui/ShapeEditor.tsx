@@ -18,7 +18,10 @@ interface ShapeEditorProps {
 const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
 
 export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
-  const { state, dispatch, viewBox, svgRef, canClose, handleCanvasClick } = useShapeEditor(value, onChange)
+  const { state, dispatch, viewBox, svgRef, canClose, handlePointerDown, handlePointerUp } = useShapeEditor(
+    value,
+    onChange,
+  )
   const readout = formatReadout(state)
   const contourPoints = state.status === 'closed' ? [...state.points, state.points[0]!] : state.points
 
@@ -31,7 +34,8 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
         role="img"
         aria-label="Редактор геометрии куска"
         data-testid="shape-editor-canvas"
-        onClick={handleCanvasClick}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
       >
         <defs>
           <pattern id="grid-minor" width={GRID_STEP_MM} height={GRID_STEP_MM} patternUnits="userSpaceOnUse">
