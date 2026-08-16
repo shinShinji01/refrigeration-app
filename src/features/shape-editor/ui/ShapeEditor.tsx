@@ -65,6 +65,10 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
             className={clsx(styles.vertex, state.intersecting && styles.vertexInvalid)}
             cx={point.x}
             cy={point.y}
+            // r={4}мм ≈ 11-22px на экране — меньше гайдлайна CLAUDE.md в 44px тач-таргета.
+            // Оставлено как есть: pointer capture (см. useVertexDrag.ts) снимает риск потери
+            // драга при промахе мимо кружка, а увеличение самой зоны попадания завязано на
+            // мм→px пересчёт, который изменится с зумом из Task 11 — решать там же, отдельно.
             r={4}
             {...getVertexHandlers(index)}
           />
