@@ -48,6 +48,10 @@
   vector-effect: non-scaling-stroke;
 }
 
+.vertexInvalid {
+  fill: $color-red;
+}
+
 .readout {
   @include tabular-nums;
 

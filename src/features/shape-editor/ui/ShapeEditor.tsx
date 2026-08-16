@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import type { Geometry } from '@/shared/lib/geometry'
 import { useShapeEditor } from '../model/useShapeEditor'
+import { useVertexDrag } from '../model/useVertexDrag'
 import { formatReadout } from '../lib/formatReadout'
 import { GRID_STEP_MM } from '../lib/snapToGrid'
 import styles from './ShapeEditor.module.scss'
@@ -22,6 +23,7 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
     value,
     onChange,
   )
+  const { getVertexHandlers } = useVertexDrag({ dispatch, svgRef, viewBox })
   const readout = formatReadout(state)
   const contourPoints = state.status === 'closed' ? [...state.points, state.points[0]!] : state.points
 
@@ -60,10 +62,11 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
           <circle
             key={index}
             data-testid={`shape-editor-vertex-${index}`}
-            className={styles.vertex}
+            className={clsx(styles.vertex, state.intersecting && styles.vertexInvalid)}
             cx={point.x}
             cy={point.y}
             r={4}
+            {...getVertexHandlers(index)}
           />
         ))}
       </svg>

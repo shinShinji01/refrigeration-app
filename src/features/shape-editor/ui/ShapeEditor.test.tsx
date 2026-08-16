@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ShapeEditor } from './ShapeEditor'
+import styles from './ShapeEditor.module.scss'
 
 describe('ShapeEditor — рендер по value', () => {
   it('value=null — пустой канвас, подсказка «Поставьте ещё 3 точки»', () => {
@@ -170,5 +171,44 @@ describe('ShapeEditor — прямоугольник драгом', () => {
 
     // второй жест — тоже просто точка (не rect), контур продолжает строиться тапами
     expect(screen.getAllByTestId(/shape-editor-vertex-/)).toHaveLength(2)
+  })
+})
+
+describe('ShapeEditor — редактирование вершины', () => {
+  it('драг вершины двигает точку и вызывает onChange с пересчитанной геометрией', () => {
+    mockCanvasRect()
+    const onChange = vi.fn()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={onChange} />)
+
+    const vertex1 = screen.getByTestId('shape-editor-vertex-1') // {x:100,y:0}
+
+    fireEvent.pointerDown(vertex1, { clientX: 0, clientY: 0 })
+    fireEvent.pointerMove(vertex1, { clientX: 50, clientY: 20 })
+    fireEvent.pointerUp(vertex1, { clientX: 50, clientY: 20 })
+
+    expect(onChange).toHaveBeenCalled()
+    const [geometry] = onChange.mock.calls.at(-1)!
+    expect(geometry.kind).toBe('polygon') // прямоугольник, сдвинутый не по оси, — уже не rect
+  })
+
+  it('драг вершины в самопересечение — не вызывает onChange, подсвечивает контур', () => {
+    mockCanvasRect()
+    const onChange = vi.fn()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={onChange} />)
+    onChange.mockClear()
+
+    const vertex0 = screen.getByTestId('shape-editor-vertex-0') // {x:0,y:0}
+    // Брифовые clientX:300,clientY:300 маппятся через clientToMm в mm (95,95) —
+    // это НЕ самопересекающийся контур (точка (95,95) не выходит за пределы старого
+    // прямоугольника настолько, чтобы рёбра пересеклись). Подобранные ниже координаты
+    // маппятся в mm (50,200) — ребро (v0,v1) пересекает ребро (v2,v3), настоящая «бабочка».
+    fireEvent.pointerDown(vertex0, { clientX: 0, clientY: 0 })
+    fireEvent.pointerUp(vertex0, { clientX: 180, clientY: 595 })
+
+    expect(onChange).not.toHaveBeenCalled()
+    // CSS-модуль скопирует имя класса (напр. `_contourInvalid_99a37c`) — сравнение с
+    // литералом 'contourInvalid' никогда не совпадёт, сверяемся со styles.contourInvalid,
+    // как это делает сам компонент.
+    expect(screen.getByTestId('shape-editor-canvas').querySelector('polyline')).toHaveClass(styles.contourInvalid!)
   })
 })

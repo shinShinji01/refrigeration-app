@@ -46,6 +46,13 @@ export const useShapeEditor = (
 
   const geometry = geometryFromState(state)
   useEffect(() => {
+    // Пока контур самопересекается, наружу не должно уходить ничего — ни
+    // валидная геометрия, ни null: снаружи всегда лежит последняя валидная
+    // геометрия (design-спек 2026-08-15-shape-editor-design.md, строки 127-130).
+    // Без этой проверки переход closed(valid) → closed(intersecting) выглядит
+    // для эффекта неотличимо от «Очистить» (geometry меняется на null) и
+    // ошибочно вызывает onChange(null) во время драга вершины.
+    if (state.intersecting) return
     if (lastSyncedValueRef.current !== value) return // синхронизация извне ещё не применилась к state
     if (geometryEquals(geometry, lastEmittedRef.current)) return
     lastEmittedRef.current = geometry
