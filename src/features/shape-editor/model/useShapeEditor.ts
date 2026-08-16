@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useReducer, useRef } from 'react'
-import type { PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react'
 import type { Geometry, Point } from '@/shared/lib/geometry'
 import {
   editorReducer,
@@ -14,14 +14,24 @@ import { boundsOfPoints } from '../lib/boundsOfPoints'
 import { clientToMm } from '../lib/clientToMm'
 import { GRID_STEP_MM, snapToGrid } from '../lib/snapToGrid'
 
+const ZOOM_STEP_FACTOR = 1.25
+const MIN_VIEWBOX_SIZE_MM = 20
+const MAX_VIEWBOX_SIZE_MM = 20_000
+
 export interface UseShapeEditorResult {
   state: EditorState
   dispatch: (action: EditorAction) => void
   viewBox: ViewBox
+  manualViewBox: ViewBox | null
   svgRef: React.RefObject<SVGSVGElement | null>
   canClose: boolean
   handlePointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handlePointerMove: (event: ReactPointerEvent<SVGSVGElement>) => void
   handlePointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void
+  handleWheel: (event: ReactWheelEvent<SVGSVGElement>) => void
+  zoomIn: () => void
+  zoomOut: () => void
+  resetZoom: () => void
 }
 
 export const useShapeEditor = (
@@ -61,18 +71,58 @@ export const useShapeEditor = (
   }, [geometry])
 
   const bounds = useMemo(() => boundsOfPoints(state.points), [state.points])
-  const viewBox = useMemo(() => fitScale(bounds), [bounds])
+  const autoViewBox = useMemo(() => fitScale(bounds), [bounds])
+  const [manualViewBox, setManualViewBox] = useState<ViewBox | null>(null)
+  const viewBox = manualViewBox ?? autoViewBox
+
+  const applyZoom = (factor: number) => {
+    const base = manualViewBox ?? autoViewBox
+    const centerX = base.x + base.width / 2
+    const centerY = base.y + base.height / 2
+    const width = Math.min(Math.max(base.width / factor, MIN_VIEWBOX_SIZE_MM), MAX_VIEWBOX_SIZE_MM)
+    const height = Math.min(Math.max(base.height / factor, MIN_VIEWBOX_SIZE_MM), MAX_VIEWBOX_SIZE_MM)
+    setManualViewBox({ x: centerX - width / 2, y: centerY - height / 2, width, height })
+  }
+
+  const handleWheel = (event: ReactWheelEvent<SVGSVGElement>) => {
+    event.preventDefault()
+    applyZoom(event.deltaY < 0 ? ZOOM_STEP_FACTOR : 1 / ZOOM_STEP_FACTOR)
+  }
 
   const dragStartRef = useRef<Point | null>(null)
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const pinchStartDistanceRef = useRef<number | null>(null)
 
   const handlePointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
+    activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (activePointersRef.current.size === 2) {
+      const [a, b] = [...activePointersRef.current.values()]
+      pinchStartDistanceRef.current = Math.hypot(a!.x - b!.x, a!.y - b!.y)
+      dragStartRef.current = null
+      return
+    }
     if (state.status === 'closed') return
     const svg = svgRef.current
     if (!svg) return
     dragStartRef.current = clientToMm(event.clientX, event.clientY, svg.getBoundingClientRect(), viewBox)
   }
 
+  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (!activePointersRef.current.has(event.pointerId)) return
+    activePointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (activePointersRef.current.size !== 2 || pinchStartDistanceRef.current === null) return
+    const [a, b] = [...activePointersRef.current.values()]
+    const distance = Math.hypot(a!.x - b!.x, a!.y - b!.y)
+    const factor = distance / pinchStartDistanceRef.current
+    if (Math.abs(factor - 1) < 0.02) return // шум жеста — не зумим на дрожание пальцев
+    applyZoom(factor)
+    pinchStartDistanceRef.current = distance
+  }
+
   const handlePointerUp = (event: ReactPointerEvent<SVGSVGElement>) => {
+    activePointersRef.current.delete(event.pointerId)
+    if (activePointersRef.current.size < 2) pinchStartDistanceRef.current = null
+
     if (state.status === 'closed') {
       dragStartRef.current = null
       return
@@ -94,5 +144,19 @@ export const useShapeEditor = (
     dispatch({ type: 'point-added', point: snapToGrid(end) })
   }
 
-  return { state, dispatch, viewBox, svgRef, canClose: state.points.length >= 3, handlePointerDown, handlePointerUp }
+  return {
+    state,
+    dispatch,
+    viewBox,
+    manualViewBox,
+    svgRef,
+    canClose: state.points.length >= 3,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleWheel,
+    zoomIn: () => applyZoom(ZOOM_STEP_FACTOR),
+    zoomOut: () => applyZoom(1 / ZOOM_STEP_FACTOR),
+    resetZoom: () => setManualViewBox(null),
+  }
 }

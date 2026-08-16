@@ -212,3 +212,48 @@ describe('ShapeEditor — редактирование вершины', () => {
     expect(screen.getByTestId('shape-editor-canvas').querySelector('polyline')).toHaveClass(styles.contourInvalid!)
   })
 })
+
+describe('ShapeEditor — zoom', () => {
+  it('кнопка + уменьшает viewBox (приближает), кнопка По размеру возвращает авто-fit', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={vi.fn()} />)
+
+    const initialViewBox = screen.getByTestId('shape-editor-canvas').getAttribute('viewBox')
+
+    fireEvent.click(screen.getByTestId('shape-editor-zoom-in'))
+    const zoomedViewBox = screen.getByTestId('shape-editor-canvas').getAttribute('viewBox')
+    expect(zoomedViewBox).not.toBe(initialViewBox)
+
+    const [, , zoomedWidth] = zoomedViewBox!.split(' ').map(Number)
+    const [, , initialWidth] = initialViewBox!.split(' ').map(Number)
+    expect(zoomedWidth!).toBeLessThan(initialWidth!) // приближение — меньший видимый мм-диапазон
+
+    fireEvent.click(screen.getByTestId('shape-editor-fit'))
+    expect(screen.getByTestId('shape-editor-canvas').getAttribute('viewBox')).toBe(initialViewBox)
+  })
+
+  it('ручной зум не сбрасывается новой точкой (авто-fit приостановлен)', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={null} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+
+    fireEvent.click(screen.getByTestId('shape-editor-zoom-in'))
+    const zoomedViewBox = canvas.getAttribute('viewBox')
+
+    fireEvent.pointerDown(canvas, { clientX: 30, clientY: 30 })
+    fireEvent.pointerUp(canvas, { clientX: 31, clientY: 31 })
+
+    expect(canvas.getAttribute('viewBox')).toBe(zoomedViewBox)
+  })
+
+  it('колесо мыши на канвасе зумит', () => {
+    mockCanvasRect()
+    render(<ShapeEditor value={{ kind: 'rect', width: 100, height: 100 }} onChange={vi.fn()} />)
+    const canvas = screen.getByTestId('shape-editor-canvas')
+    const before = canvas.getAttribute('viewBox')
+
+    fireEvent.wheel(canvas, { deltaY: -100 })
+
+    expect(canvas.getAttribute('viewBox')).not.toBe(before)
+  })
+})

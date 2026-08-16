@@ -4,6 +4,9 @@ import { useShapeEditor } from '../model/useShapeEditor'
 import { useVertexDrag } from '../model/useVertexDrag'
 import { formatReadout } from '../lib/formatReadout'
 import { GRID_STEP_MM } from '../lib/snapToGrid'
+import PlusIcon from '@/shared/assets/icons/plus.svg?react'
+import MinusIcon from '@/shared/assets/icons/minus.svg?react'
+import { IconButton } from '@/shared/ui'
 import styles from './ShapeEditor.module.scss'
 
 interface ShapeEditorProps {
@@ -19,11 +22,23 @@ interface ShapeEditorProps {
 const GRID_MAJOR_STEP_MM = GRID_STEP_MM * 10
 
 export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
-  const { state, dispatch, viewBox, svgRef, canClose, handlePointerDown, handlePointerUp } = useShapeEditor(
-    value,
-    onChange,
-  )
+  const {
+    state,
+    dispatch,
+    viewBox,
+    manualViewBox,
+    svgRef,
+    canClose,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleWheel,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+  } = useShapeEditor(value, onChange)
   const { getVertexHandlers } = useVertexDrag({ dispatch, svgRef, viewBox })
+
   const readout = formatReadout(state)
   const contourPoints = state.status === 'closed' ? [...state.points, state.points[0]!] : state.points
 
@@ -37,7 +52,9 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
         aria-label="Редактор геометрии куска"
         data-testid="shape-editor-canvas"
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onWheel={handleWheel}
       >
         <defs>
           <pattern id="grid-minor" width={GRID_STEP_MM} height={GRID_STEP_MM} patternUnits="userSpaceOnUse">
@@ -67,8 +84,9 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
             cy={point.y}
             // r={4}мм ≈ 11-22px на экране — меньше гайдлайна CLAUDE.md в 44px тач-таргета.
             // Оставлено как есть: pointer capture (см. useVertexDrag.ts) снимает риск потери
-            // драга при промахе мимо кружка, а увеличение самой зоны попадания завязано на
-            // мм→px пересчёт, который изменится с зумом из Task 11 — решать там же, отдельно.
+            // драга при промахе мимо кружка. Увеличение самой зоны попадания — известная
+            // отложенная доработка (не привязана к конкретной задаче плана): она завязана на
+            // мм→px пересчёт, который меняется с зумом (см. applyZoom в useShapeEditor.ts).
             r={4}
             {...getVertexHandlers(index)}
           />
@@ -102,6 +120,29 @@ export const ShapeEditor = ({ value, onChange }: ShapeEditorProps) => {
           onClick={() => dispatch({ type: 'closed-by-button' })}
         >
           Замкнуть
+        </button>
+        <IconButton
+          icon={PlusIcon}
+          label="Приблизить"
+          data-testid="shape-editor-zoom-in"
+          className={styles.toolbarButton}
+          onClick={zoomIn}
+        />
+        <IconButton
+          icon={MinusIcon}
+          label="Отдалить"
+          data-testid="shape-editor-zoom-out"
+          className={styles.toolbarButton}
+          onClick={zoomOut}
+        />
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          data-testid="shape-editor-fit"
+          disabled={manualViewBox === null}
+          onClick={resetZoom}
+        >
+          По размеру
         </button>
       </div>
     </div>
